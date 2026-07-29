@@ -178,9 +178,8 @@ const STEPS=[
   {id:'q38',sec:5,qi:0,type:'single',req:true,
    title:'Would you be open to joining an early pilot in Bangalore?',
    opts:['Yes, definitely','Maybe — tell me more when it is ready','Not right now'],
-   branch:(a)=>{if(a.q38==='Not right now')return 'done';return 'pilot';}},
+   branch:(a)=>{if(a.q38==='Not right now')return 'END';return 'pilot';}},
   {id:'pilot',sec:5,qi:0,type:'pilot',req:true,title:'A couple more details',next:'END'},
-  {id:'done', sec:5,qi:0,type:'done', req:false,title:'',next:'END'},
 ];
 
 const SM=Object.fromEntries(STEPS.map(s=>[s.id,s]));
