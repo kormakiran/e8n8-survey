@@ -938,7 +938,7 @@ export default function SurveyPage(){
         if(!Array.isArray(a[key]))return null;
         return a[key].map(v=>OTHER_OPTS.includes(v)?(a[key+'_other']||v):v).join(', ');
       };
-      await supabase.from('responses').insert([{
+      await supabase.from('responses').upsert([{
         session_id:sessionId.current,
         last_question_seen:'completed',
         name:finalName,age:a.q2||null,gender:a.q3||null,city,
@@ -975,7 +975,7 @@ export default function SurveyPage(){
         pilot_activity:pilot.activity||null,pilot_work_schedule:pilot.schedule||null,
         disclaimer_ack:false,
         submitted_at:new Date().toISOString(),
-      }]);
+      }],{onConflict:'session_id'});
       setIsSubmitted(true);
     }catch(e){
       console.error('doSubmit error:',e);
