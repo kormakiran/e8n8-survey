@@ -926,7 +926,7 @@ export default function SurveyPage(){
         if(!Array.isArray(a[key]))return null;
         return a[key].map(v=>OTHER_OPTS.includes(v)?(a[key+'_other']||v):v).join(', ');
       };
-      await supabase.from('responses').insert([{
+      const {error}=await supabase.from('responses').insert([{
         session_id:sessionId.current,
         source:sourceRef.current,
         last_question_seen:'completed',
@@ -935,23 +935,17 @@ export default function SurveyPage(){
         dietary_restrictions:a.q4b||null,
         goal:a.q6||null,routine:a.q7||null,nutrition_literacy:a.qnl||null,
         diet_approach:a.q9||null,
-        // Branch A
         plan_type:oo('q12'),plan_change:arrOther('q14'),
         tracking_habits:a.qtrk||null,
-        // Branch B
         plan_source:oo('q15'),time_effort_part:arrOther('q16'),
         tracking_confidence:a.q17||null,tracking_habits_b:a.qtrk_b||null,
         meal_repetition:a.qrep||null,plan_duration:a.qb5||null,
-        // Branch C
         healthy_meaning:oo('q20'),progress_doubt:a.q21||null,
         structure_barrier:arrOther('q22'),diet_trigger:a.qc5||null,
-        // Branch D
         starting_soon:a.q23||null,start_barrier:arrOther('q24'),
         help_preference:a.q25||null,start_trigger:a.qd5||null,
-        // Branch E
         old_approach_type:a.q26||null,stop_reason:arrOther('q27'),
         restart_condition:arrOther('q28'),restart_intent:a.qe6||null,
-        // What Matters
         food_priorities:arrOther('q31'),help_type:oo('q32'),
         delegate_task:arrOther('q33'),willingness_to_pay:a.q34||null,
         healthy_delivery_tried:a.qhd||null,food_discovery:arrOther('q35a'),
@@ -965,6 +959,12 @@ export default function SurveyPage(){
         disclaimer_ack:false,
         submitted_at:new Date().toISOString(),
       }]);
+      if(error){
+        console.error('Supabase insert error:',JSON.stringify(error));
+        setSubmitErr('Something went wrong saving your response. Please try again.');
+        setTransitioning(false);
+        return;
+      }
       setIsSubmitted(true);
     }catch(e){
       console.error('doSubmit error:',e);
