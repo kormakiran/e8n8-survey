@@ -876,25 +876,13 @@ export default function SurveyPage(){
   useEffect(()=>()=>{if(fillTick.current)clearInterval(fillTick.current);},[]);
 
   const sessionId=useRef(typeof crypto!=='undefined'?crypto.randomUUID():'sess-'+Date.now());
-
-  // Track drop-off: upsert partial row on every step change
-  async function trackStep(stepId,ans){
-    try{
-      await supabase.from('responses').upsert([{
-        session_id:sessionId.current,
-        last_question_seen:stepId,
-        city:normCity(ans.q4||''),
-        is_bengaluru:isBengaluru(ans.q4||''),
-        submitted_at:null, // null means incomplete
-      }],{onConflict:'session_id',ignoreDuplicates:false});
-    }catch(_){}// silent fail — tracking is best-effort
-  }
+  // Capture ?src= URL param for channel tracking
+  const sourceRef=useRef(typeof window!=='undefined'?new URLSearchParams(window.location.search).get('src')||null:null);
 
   const advance=useCallback((ans)=>{
     resetFill();
     const next=resolveNext(currentId,ans);
     if(!next||next==='END'){doSubmit(ans);return;}
-    trackStep(next,ans); // Fix 7: track every step transition
     setHistory(h=>[...h,currentId]);
     setCurrentId(next);
     setTransitioning(false);
@@ -938,8 +926,9 @@ export default function SurveyPage(){
         if(!Array.isArray(a[key]))return null;
         return a[key].map(v=>OTHER_OPTS.includes(v)?(a[key+'_other']||v):v).join(', ');
       };
-      await supabase.from('responses').upsert([{
+      await supabase.from('responses').insert([{
         session_id:sessionId.current,
+        source:sourceRef.current,
         last_question_seen:'completed',
         name:finalName,age:a.q2||null,gender:a.q3||null,city,
         is_bengaluru:isBengaluru(rawCity),
@@ -975,7 +964,7 @@ export default function SurveyPage(){
         pilot_activity:pilot.activity||null,pilot_work_schedule:pilot.schedule||null,
         disclaimer_ack:false,
         submitted_at:new Date().toISOString(),
-      }],{onConflict:'session_id'});
+      }]);
       setIsSubmitted(true);
     }catch(e){
       console.error('doSubmit error:',e);
