@@ -831,7 +831,6 @@ export default function SurveyPage(){
     resetFill();
     const next=resolveNext(currentId,ans);
     if(!next||next==='END'){doSubmit(ans);return;}
-    trackStep(next,ans);
     setHistory(h=>[...h,currentId]);
     setCurrentId(next);
     setTransitioning(false);
@@ -860,6 +859,7 @@ export default function SurveyPage(){
 
   async function doSubmit(a){
     setSubmitting(true);setSubmitErr(null);
+    console.log('doSubmit called with keys:', Object.keys(a).filter(k=>a[k]));
     try{
       const rawCity=a.q4||'';const city=normCity(rawCity);
       const contact=a.contact||{};const pilot=a.pilot||{};
@@ -872,53 +872,71 @@ export default function SurveyPage(){
         if(!Array.isArray(a[key]))return null;
         return a[key].map(v=>OTHER_OPTS.includes(v)?(a[key+'_other']||v):v).join(', ');
       };
-      await supabase.from('responses').upsert([{
+      await supabase.from('responses').insert([{
         session_id:sessionId.current,
+        last_question_seen:'completed',
+        // About You
         name:finalName,age:a.q2||null,gender:a.q3||null,city,
-        dietary_restrictions:arr('q4b'),
-        goal:arr('q6'),routine:a.q7||null,
+        is_bengaluru:isBengaluru(rawCity),
+        dietary_restrictions:a.q4b||null,
+        // Goal & Tracking
+        goal:a.q6||null,
+        routine:a.q7||null,
         nutrition_literacy:a.qnl||null,
-        cooking_comfort:a.qck||null,
+        // Your Approach
         diet_approach:a.q9||null,
         // Branch A
-        plan_type:oo('q12'),still_using:a.q13||null,plan_change:arr('q14'),
-        plan_longterm:a.qa5||null,
+        plan_type:oo('q12'),
+        plan_change:arr('q14'),
         // Branch B
-        plan_source:oo('q15'),time_effort_part:arr('q16'),tracking_confidence:a.q17||null,
+        plan_source:oo('q15'),
+        time_effort_part:arr('q16'),
+        tracking_confidence:a.q17||null,
         plan_duration:a.qb5||null,
         // Branch C
-        healthy_meaning:a.q20||null,progress_doubt:a.q21||null,structure_barrier:arr('q22'),
+        healthy_meaning:a.q20||null,
+        progress_doubt:a.q21||null,
+        structure_barrier:arr('q22'),
         diet_trigger:a.qc5||null,
         // Branch D
-        starting_soon:a.q23||null,start_barrier:arr('q24'),help_preference:a.q25||null,
+        starting_soon:a.q23||null,
+        start_barrier:arr('q24'),
+        help_preference:a.q25||null,
         start_trigger:a.qd5||null,
         // Branch E
-        old_approach_type:a.q26||null,stop_reason:arrOther('q27'),restart_condition:arr('q28'),
+        old_approach_type:a.q26||null,
+        stop_reason:arrOther('q27'),
+        restart_condition:arr('q28'),
         restart_intent:a.qe6||null,
-        // Section 3
-        food_priorities:arr('q31'),help_type:a.q32||null,delegate_task:arr('q33'),
+        // What Matters
+        food_priorities:arr('q31'),
+        help_type:oo('q32'),
+        delegate_task:arr('q33'),
         willingness_to_pay:a.q34||null,
-        taste_preference:arr('qtp'),
         healthy_delivery_tried:a.qhd||null,
         food_discovery:arr('q35a'),
-        // Section 4
-        meal_timing:a.q36a||null,
-        order_platforms:arr('q36b'),
-        household_size:a.q36c||null,
-        meal_timing_preference:arr('q36e'),
-        current_food_spend:a.q36f||null,
+        // Wrapping Up
         biggest_pain:a.q36d||null,
-        // Contact & pilot
-        contact_instagram:contact.instagram||null,contact_whatsapp:finalWA,contact_email:finalEmail,
-        pilot_interest:a.q38||null,pilot_locality:pilot.locality||null,
-        pilot_weight:pilot.weight||null,pilot_height:pilot.height||null,
-        pilot_activity:pilot.activity||null,pilot_work_schedule:pilot.schedule||null,
-        is_bengaluru:isBengaluru(rawCity),disclaimer_ack:Boolean(a.disclaimerAck),
-        last_question_seen:'completed',submitted_at:new Date().toISOString(),
-      }],{onConflict:'session_id'});
+        // Contact
+        contact_instagram:contact.instagram||null,
+        contact_whatsapp:finalWA,
+        contact_email:finalEmail,
+        // Pilot
+        pilot_interest:a.q38||null,
+        pilot_locality:pilot.locality||null,
+        pilot_weight:pilot.weight||null,
+        pilot_height:pilot.height||null,
+        pilot_activity:pilot.activity||null,
+        pilot_work_schedule:pilot.schedule||null,
+        disclaimer_ack:false,
+        submitted_at:new Date().toISOString(),
+      }]);
       setIsSubmitted(true);
-    }catch(e){setSubmitErr('Something went wrong. Please try again.');setTransitioning(false);}
-    finally{setSubmitting(false);}
+    }catch(e){
+      console.error('doSubmit error:', e);
+      setSubmitErr('Something went wrong. Please try again.');
+      setTransitioning(false);
+    }    finally{setSubmitting(false);}
   }
 
   const joinedPilot=answers.q38&&answers.q38!=='Not right now'&&isBengaluru(answers.q4);
@@ -1075,7 +1093,11 @@ export default function SurveyPage(){
                   }
                 </div>
                 <div className="flex-1">
-                  <NavBtn label={rightLabel} onClick={rightIsFinish||rightIsNext?()=>goNext():answered?()=>goNext():()=>goNext(true)} active={rightActive} side="right"/>
+                  <NavBtn label={rightLabel} onClick={()=>{
+                    if(rightIsFinish||rightIsNext){goNext();}
+                    else if(answered){goNext();}
+                    else{goNext(true);}
+                  }} active={rightActive} side="right"/>
                 </div>
               </div>
             </>
