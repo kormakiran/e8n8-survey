@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -15,7 +15,7 @@ function isBengaluru(c=''){const l=c.toLowerCase();return l.includes('bengaluru'
 const TOP_CITIES=['Bengaluru','Mumbai','Delhi','Hyderabad','Pune','Chennai','Kolkata','Ahmedabad','Gurgaon','Noida'];
 const ALL_CITIES=[
   'Agartala','Agra','Ahmedabad','Aizawl','Ajmer','Akola','Aligarh','Allahabad','Alwar','Ambala',
-  'Amravati','Amritsar','Anand','Anantapur','Asansol','Aurangabad','Bareilly','Belgaum','Bengaluru','Bhavnagar',
+  'Amravati','Amritsar','Anand','Anantapur','Asansol','Aurangabad','Bangalore','Bareilly','Belgaum','Bengaluru','Bhavnagar',
   'Bhilai','Bhiwandi','Bhiwani','Bhopal','Bhubaneswar','Bikaner','Bilaspur','Bokaro','Chandigarh','Chennai',
   'Coimbatore','Cuttack','Dahod','Darbhanga','Davanagere','Dehradun','Delhi','Dhanbad','Dharwad','Dibrugarh',
   'Durgapur','Erode','Faridabad','Firozabad','Gandhinagar','Ghaziabad','Gorakhpur','Gulbarga','Guntur','Gurgaon',
@@ -29,14 +29,16 @@ const ALL_CITIES=[
   'Tirupati','Tiruppur','Ujjain','Vadodara','Varanasi','Vellore','Vijayawada','Visakhapatnam','Warangal','Yamunanagar',
 ];
 
-const SEC=[{n:'About You',q:5},{n:'Goal & Tracking',q:3},{n:'Your Approach',q:4},{n:'What Matters',q:5},{n:'Wrapping Up',q:1}];
-const TOTAL_MAIN=SEC.reduce((s,x)=>s+x.q,0);
+// Section definitions — qi counts only required questions per section
+const SEC=[{n:'About You',q:5},{n:'Goal & Tracking',q:3},{n:'Your Approach',q:4},{n:'What Matters',q:6},{n:'Wrapping Up',q:1}];
+// Average branch path ≈ 17 steps — use this as denominator so progress hits 100%
+const PROGRESS_DENOM=17;
 
 const OTHER_A='Something else — tell us what';
 const OTHER_B='Something else — describe it';
 const OTHER_C='Something else — tell me more';
 const OTHER_E='Another reason — what was it?';
-const OTHER_OPTS_LIST=['Something else — tell us what','Something else — describe it','Something else — tell me more','Another reason — what was it?'];
+const OTHER_OPTS_LIST=[OTHER_A,OTHER_B,OTHER_C,OTHER_E,'Something else'];
 
 const STEPS=[
   // ── Section 0 — About You (5) ─────────────────────────────────────────────
@@ -50,7 +52,7 @@ const STEPS=[
    title:'Which best describes your diet?',
    opts:['Vegetarian','Non-vegetarian','Vegan','Jain','No specific restrictions'],next:'q5'},
 
-  // ── Section 1 — Goal & Tracking (3) ──────────────────────────────────────
+  // ── Section 1 — Goal & Tracking (3 required + QNL optional) ──────────────
   {id:'q5', sec:1,qi:1,type:'single',req:true,
    title:'Which best describes your fitness journey right now?',
    opts:['Just starting out','Been at it a while','Very consistent and experienced','Not really working out right now'],next:'q6'},
@@ -60,11 +62,10 @@ const STEPS=[
   {id:'q7', sec:1,qi:3,type:'single',req:true,
    title:'Which best describes your current routine?',
    opts:['Gym and diet, both together','Only gym — not really watching my diet','Only diet — not really working out','Neither right now'],next:'qnl'},
-
-  // ── QNL — nutrition literacy (optional, shown after Q7) ──────────────────
-  {id:'qnl',sec:1,qi:0,type:'single',req:false,
+  // Fix 3: QNL always shows qi so it gets a number
+  {id:'qnl',sec:1,qi:4,type:'single',req:false,
    title:'How familiar are you with concepts like calorie deficit, protein targets, or macros?',
-   opts:['I track them actively and know my numbers','I understand them but don\'t follow them strictly','I\'ve heard of them but don\'t really know how they work','Not familiar at all'],next:'q9'},
+   opts:['I track them actively and know my numbers',"I understand them but don't follow them strictly","I've heard of them but don't really know how they work",'Not familiar at all'],next:'q9'},
 
   // ── Section 2 — Your Approach ─────────────────────────────────────────────
   {id:'q9', sec:2,qi:1,type:'single',req:true,
@@ -77,40 +78,52 @@ const STEPS=[
    opts:['I cook for myself','Family cooks','We have a cook','My meal plan provides it','I order in most days','A mix of these'],
    branch:(a)=>({'Trying on my own with a structured plan':'q15',
      'Trying on my own without any structure':'q20','Not doing anything specific':'q23',
-     "I used to, but I've stopped":'q26'}[a.q9])},
+     "I used to, but I've stopped":'q26'}[a.q9])||'q31'},
 
-  // Branch A — Paid plan (Q12 → Q14 → Q31)
+  // Branch A — Paid plan
   {id:'q12',sec:2,qi:3,type:'single-other',req:true,
    title:'What kind of paid plan is it?',
    opts:['Dietician or nutritionist','Meal delivery service (EatFit, Curefoods, Eat Club…)','Fitness app or online coach',OTHER_A],next:'q14'},
-  {id:'q14',sec:2,qi:4,type:'multi',req:true,hint:'Select all that apply.',
+  {id:'q14',sec:2,qi:4,type:'multi-other',req:true,hint:'Select all that apply.',
    title:'If you could change things about it, what would you change?',
-   opts:['Make it cheaper','Improve the food quality','Add more variety','Make it more flexible','Nothing — I am happy with it'],next:'q31'},
+   opts:['Make it cheaper','Improve the food quality','Add more variety','Make it more flexible','Nothing — I am happy with it','Something else'],next:'qtrk'},
+  // Part 2 Q1: Tracking habits — Branch A only
+  {id:'qtrk',sec:2,qi:0,type:'single',req:false,
+   title:'How would you describe your current diet and tracking habits?',
+   opts:['I track strictly year-round as a lifestyle','I only track strictly during specific time-bound goals (like a 12-week cut)','I just keep a loose mental tally of my macros'],next:'q31'},
 
   // Branch B — Own structured
   {id:'q15',sec:2,qi:3,type:'single-other',req:true,
    title:'Where does your meal plan or structure come from?',
    opts:['I researched and designed it myself','A friend, trainer, or influencer gave me guidelines','A free plan I found online','A mix of sources',OTHER_B],next:'q16'},
-  {id:'q16',sec:2,qi:4,type:'multi',req:true,hint:'Select all that apply.',
+  {id:'q16',sec:2,qi:4,type:'multi-other',req:true,hint:'Select all that apply.',
    title:'Which parts take the most time or effort?',
-   opts:['Deciding what to eat','Buying groceries','Cooking or meal prep','Logging what I eat','Staying consistent',"None — it's easy"],next:'q17'},
+   opts:['Deciding what to eat','Buying groceries','Cooking or meal prep','Logging what I eat','Staying consistent',"None — it's easy",'Something else'],next:'q17'},
   {id:'q17',sec:2,qi:5,type:'single',req:true,
    title:`How confident are you that what you're eating actually matches your goal?`,
-   opts:['Very confident',"Somewhat — I'm estimating a lot",'Not very confident',"I don't really track it"],next:'qb5'},
+   opts:['Very confident',"Somewhat — I'm estimating a lot",'Not very confident',"I don't really track it"],next:'qtrk_b'},
+  // Part 2 Q1: Tracking habits — Branch B
+  {id:'qtrk_b',sec:2,qi:0,type:'single',req:false,
+   title:'How would you describe your current diet and tracking habits?',
+   opts:['I track strictly year-round as a lifestyle','I only track strictly during specific time-bound goals (like a 12-week cut)','I just keep a loose mental tally of my macros'],next:'qrep'},
+  // Part 2 Q2: Meal repetition — Branch B only
+  {id:'qrep',sec:2,qi:0,type:'single',req:false,
+   title:'How often do you end up eating the exact same meals just because it\'s easier to track or prep?',
+   opts:['Almost every day — I eat the same things on repeat','A few times a week','Rarely — I need variety','Not applicable — I don\'t prep or track'],next:'qb5'},
   {id:'qb5',sec:2,qi:0,type:'single',req:false,
    title:'How long have you been following this structure?',
    opts:['Less than a month','1–3 months','3–6 months','More than 6 months'],next:'q31'},
 
   // Branch C — No structure
-  {id:'q20',sec:2,qi:3,type:'single',req:true,
+  {id:'q20',sec:2,qi:3,type:'single-other',req:true,
    title:'What does eating healthy mean to you day to day?',
-   opts:['Eating home-cooked food','Cutting out certain foods','Watching portions','General balance with no strict rules','Just eating a little less overall'],next:'q21'},
+   opts:['Eating home-cooked food','Cutting out certain foods','Watching portions','General balance with no strict rules','Just eating a little less overall',OTHER_C],next:'q21'},
   {id:'q21',sec:2,qi:4,type:'single',req:true,
    title:`Do you ever wonder if what you're doing is actually working?`,
    opts:['Yes, often','Sometimes','Rarely',"I'm not really tracking anything"],next:'q22'},
-  {id:'q22',sec:2,qi:5,type:'multi',req:true,hint:'Select all that apply.',
+  {id:'q22',sec:2,qi:5,type:'multi-other',req:true,hint:'Select all that apply.',
    title:`What's stopped you from being more structured about your diet?`,
-   opts:['Too much effort',"Don't know where to start",'Eating with family makes it hard',"Haven't felt the need to","Tried before and it didn't work for me"],next:'qc5'},
+   opts:['Too much effort',"Don't know where to start",'Eating with family makes it hard',"Haven't felt the need to","Tried before and it didn't work for me",'Something else'],next:'qc5'},
   {id:'qc5',sec:2,qi:0,type:'single',req:false,
    title:'What first made you start paying attention to what you eat?',
    opts:['Started going to the gym',"Doctor's advice or a health scare","Saw someone else's results",'Gained or lost weight noticeably','Just decided it was time'],next:'q31'},
@@ -119,9 +132,9 @@ const STEPS=[
   {id:'q23',sec:2,qi:3,type:'single',req:true,
    title:`Is this something you're thinking about starting?`,
    opts:['Yes, actively thinking about it','Maybe eventually','Not really a priority right now'],next:'q24'},
-  {id:'q24',sec:2,qi:4,type:'multi',req:true,hint:'Select all that apply.',
+  {id:'q24',sec:2,qi:4,type:'multi-other',req:true,hint:'Select all that apply.',
    title:'What feels like the biggest barrier to starting?',
-   opts:['Cost','Not knowing where to start','Not sure what actually works for me','Time or effort required','Lack of motivation'],next:'q25'},
+   opts:['Cost','Not knowing where to start','Not sure what actually works for me','Time or effort required','Lack of motivation','Something else'],next:'q25'},
   {id:'q25',sec:2,qi:5,type:'single',req:true,
    title:'If you did start, would you want to figure it out yourself or have it handled for you?',
    opts:['Figure it out myself with some guidance','Want it mostly handled for me','Not sure yet'],next:'qd5'},
@@ -136,35 +149,39 @@ const STEPS=[
   {id:'q27',sec:2,qi:4,type:'multi-other',req:true,
    title:'What led you to stop?',
    opts:['Life got busy','Lost motivation or got bored','Too expensive','Too much effort to maintain',"Didn't see results",OTHER_E],next:'q28'},
-  {id:'q28',sec:2,qi:5,type:'multi',req:true,hint:'Select all that apply.',
+  {id:'q28',sec:2,qi:5,type:'multi-other',req:true,hint:'Select all that apply.',
    title:'What would need to be different for you to try again?',
-   opts:['Lower cost','Less effort on my end','More flexibility','Seeing actual results','Someone to keep me accountable',"I'm not looking to try again"],next:'qe6'},
+   opts:['Lower cost','Less effort on my end','More flexibility','Seeing actual results','Someone to keep me accountable',"I'm not looking to try again",'Something else'],next:'qe6'},
   {id:'qe6',sec:2,qi:0,type:'single',req:false,
    title:'Are you actively looking for something to restart with, or just open if the right thing came along?',
    opts:['Actively looking for something right now','Open if the right thing came along','Not really thinking about it right now'],next:'q31'},
 
-  // ── Section 3 — What Matters (5) ─────────────────────────────────────────
-  {id:'q31',sec:3,qi:1,type:'multi',req:true,hint:'Select all that apply.',
+  // ── Section 3 — What Matters (6 questions) ───────────────────────────────
+  {id:'q31',sec:3,qi:1,type:'multi-other',req:true,hint:'Select all that apply.',
    title:'Which of these matters most to you about the food you eat day to day?',
-   opts:['Taste','Cost','Time and effort to get it','Knowing my calories or macros','Getting the right nutrition for my goal','Variety','Portion size'],next:'q32'},
+   opts:['Taste','Cost','Time and effort to get it','Knowing my calories or macros','Getting the right nutrition for my goal','Variety','Portion size','Something else'],next:'q32'},
   {id:'q32',sec:3,qi:2,type:'single-other',req:true,
    title:'What kind of support with your diet would suit you best?',
-   opts:['Fully handled for me — I just eat it','Guided — with some choices left to me','Occasional reminders or nudges',"I don't think I need support right now",'Something else — tell me more'],next:'q33'},
-  {id:'q33',sec:3,qi:3,type:'multi',req:false,hint:'Select all that apply.',
+   opts:['Fully handled for me — I just eat it','Guided — with some choices left to me','Occasional reminders or nudges',"I don't think I need support right now",OTHER_C],next:'q33'},
+  {id:'q33',sec:3,qi:3,type:'multi-other',req:false,hint:'Select all that apply.',
    title:'If someone could take over parts of your food routine, what would help most?',
-   opts:['Deciding what to eat','Cooking or preparing it','Tracking what I eat','Shopping for groceries','Nothing — I prefer doing it myself'],next:'q34'},
+   opts:['Deciding what to eat','Cooking or preparing it','Tracking what I eat','Shopping for groceries','Nothing — I prefer doing it myself','Something else'],next:'q34'},
   {id:'q34',sec:3,qi:4,type:'single',req:true,
    title:'How much would you be okay spending per day on food that fits your fitness goal?',
-   opts:['Under ₹200','₹200–350','₹350–500','₹500–700','₹700 or more'],branch:(a)=>a.q9==='Following a structured paid plan'?'q36d':'qhd'},
+   opts:['Under ₹200','₹200–350','₹350–500','₹500–700','₹700 or more'],
+   branch:(a)=>a.q9==='Following a structured paid plan'?'qdeal':'qhd'},
   {id:'qhd',sec:3,qi:5,type:'single',req:false,
    title:'Have you ever ordered food specifically because it was marketed as healthy or good for your goals?',
-   opts:['Yes, and it worked well for me',"Yes, but it didn't stick","No, but I'd be open to trying","No, I prefer cooking or making my own choices"],
-   next:'q35a'},
-  {id:'q35a',sec:3,qi:5,type:'multi',req:false,hint:'Select all that apply.',
+   opts:['Yes, and it worked well for me',"Yes, but it didn't stick","No, but I'd be open to trying","No, I prefer cooking or making my own choices"],next:'q35a'},
+  {id:'q35a',sec:3,qi:6,type:'multi-other',req:false,hint:'Select all that apply.',
    title:'How do you usually discover food options that match your goals?',
-   opts:['Social media or influencers','Friends or word of mouth','I research and look it up myself','I ask my trainer or coach',"I don't look — I eat whatever is available"],next:'q36d'},
+   opts:['Social media or influencers','Friends or word of mouth','I research and look it up myself','I ask my trainer or coach',"I don't look — I eat whatever is available",'Something else'],next:'qdeal'},
+  // Part 2 Q3: Flexibility / dealbreaker — universal, all paths converge here
+  {id:'qdeal',sec:3,qi:6,type:'single',req:false,
+   title:'If you have ever avoided or canceled a healthy meal delivery service, what was the primary dealbreaker?',
+   opts:['Too rigid — I need flexibility for eating out, weekends, or travel','Menu got boring fast','Macro mismatch — didn\'t fit my exact calorie or protein needs','Too expensive to sustain long-term','N/A — I\'ve never considered a meal delivery service'],next:'q36d'},
 
-  // ── Section 4 — Wrapping Up (1) ──────────────────────────────────────────
+  // ── Section 4 — Wrapping Up (1 question) ─────────────────────────────────
   {id:'q36d',sec:4,qi:1,type:'text',req:false,long:true,
    title:'What is the single biggest problem with how you eat right now?',
    hint:'Optional but very useful — be as specific as you like.',
@@ -183,7 +200,13 @@ const STEPS=[
 ];
 
 const SM=Object.fromEntries(STEPS.map(s=>[s.id,s]));
-function resolveNext(id,a){const s=SM[id];if(!s)return 'END';if(s.branch)return s.branch(a);return s.next||'END';}
+// Fix 6: always safe fallback — branch result || next || END
+function resolveNext(id,a){
+  const s=SM[id];
+  if(!s)return 'END';
+  if(s.branch){const r=s.branch(a);return r||s.next||'END';}
+  return s.next||'END';
+}
 const OTHER_OPTS=OTHER_OPTS_LIST;
 function isAnswered(id,a){
   const s=SM[id];if(!s||!s.req)return true;
@@ -470,6 +493,9 @@ function PilotFields({value={},onChange,contact={}}){
   function upd(k,v){const n={...d,[k]:v};setD(n);onChange(n);}
   function touch(k){setTouched(t=>({...t,[k]:true}));}
 
+  // Fix 8: dynamic required indicators
+  const waRequired=!d.email?.trim();
+  const emRequired=!d.whatsapp?.trim();
   const waOk=validatePhone(d.whatsapp);
   const emOk=validateEmail(d.email);
   const hasContact=(d.whatsapp&&waOk)||(d.email&&emOk);
@@ -507,14 +533,14 @@ function PilotFields({value={},onChange,contact={}}){
               className={inp+(touched.locality&&!hasLocality?' border-red-400':'')}/>
           )}
 
-          {field('WhatsApp',true,
+          {field('WhatsApp',waRequired,
             <div>
               <input value={d.whatsapp||''} onChange={e=>upd('whatsapp',e.target.value)} onBlur={()=>touch('whatsapp')} placeholder="+91 98765 43210" type="tel" style={MN}
                 className={inp+(waErr?' border-red-400':'')}/>
               {waErr&&<p className="text-xs text-red-500 mt-1" style={MN}>Enter a valid 10-digit number (+91 or without)</p>}
             </div>
           )}
-          {field('Email',false,
+          {field('Email',emRequired,
             <div>
               <input value={d.email||''} onChange={e=>upd('email',e.target.value)} onBlur={()=>touch('email')} placeholder="you@example.com" type="email" style={MN}
                 className={inp+(emErr?' border-red-400':'')}/>
@@ -626,7 +652,7 @@ function ThankyouGeneral(){
         <div className="mt-6 border-2 border-gray-200 p-4" style={{background:'#fafafa'}}>
           <p style={{...MN,fontSize:11,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#aaa',marginBottom:10}}>Know someone who'd find this useful?</p>
           <p style={{...MN,fontSize:13,color:'#555',marginBottom:12,lineHeight:1.6}}>If you know someone into fitness or trying to eat better, sharing this takes 5 seconds.</p>
-          <a href={`https://wa.me/?text=${encodeURIComponent("Hey! Took this quick survey on food and fitness habits — honest, no selling involved. Takes 3–5 mins: https://e8n8-survey.vercel.app")}`}
+          <a href={`https://wa.me/?text=${encodeURIComponent("Hey! take this quick survey on food and fitness habits — honest, no selling involved. Takes 3–5 mins: https://e8n8-survey.vercel.app")}`}
             target="_blank" rel="noopener noreferrer" style={MN}
             className="w-full flex items-center justify-center gap-2 py-3 bg-gray-900 text-white text-sm font-bold hover:bg-black transition-colors">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.533 5.86L0 24l6.335-1.658A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.651-.52-5.166-1.427l-.371-.22-3.844 1.006 1.03-3.747-.241-.386A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
@@ -686,7 +712,7 @@ function ThankyouBengaluru(){
         <div className="border-2 border-gray-200 p-4" style={{background:'#fafafa'}}>
           <p style={{...MN,fontSize:11,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#aaa',marginBottom:10}}>Know someone in Bangalore who'd want in?</p>
           <p style={{...MN,fontSize:13,color:'#555',marginBottom:12,lineHeight:1.6}}>Share this with anyone who takes fitness and food seriously.</p>
-          <a href={`https://wa.me/?text=${encodeURIComponent("Hey! Took this quick survey on food and fitness habits — honest, no selling involved. Takes 3–5 mins: https://e8n8-survey.vercel.app")}`}
+          <a href={`https://wa.me/?text=${encodeURIComponent("Hey! take this quick survey on food and fitness habits — honest, no selling involved. Takes 3–5 mins: https://e8n8-survey.vercel.app")}`}
             target="_blank" rel="noopener noreferrer" style={MN}
             className="w-full flex items-center justify-center gap-2 py-3 bg-gray-900 text-white text-sm font-bold hover:bg-black transition-colors">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.533 5.86L0 24l6.335-1.658A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.651-.52-5.166-1.427l-.371-.22-3.844 1.006 1.03-3.747-.241-.386A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
@@ -780,28 +806,66 @@ export default function SurveyPage(){
   const answered=isAnswered(currentId,answers);
   const sec=step?.sec??0;
   const secInfo=SEC[sec];
-  const qi=step?.qi||0;
-  // Global question number — count position in history across all survey steps (not pilot/contact)
-  const surveyStepIds=STEPS.filter(s=>s.sec<5&&!['contact','done'].includes(s.id)).map(s=>s.id);
-  const globalQNum=surveyStepIds.indexOf(currentId)+1;
-  const globalQTotal=surveyStepIds.length;
-  const showMeta=sec<5&&globalQNum>0&&!['contact','pilot','disc','done'].includes(step?.type);
 
-  const dotsAnswered=history.filter(id=>SM[id]?.sec<5&&!['contact'].includes(id)).length;
+  // ── Fix 1+3: Dynamic Q numbering ─────────────────────────────────────────
+  // Walk the actual path the user is on (history + current) within current section
+  // to compute qNum/qTotal dynamically — no hardcoded qi or SEC.q
+  const sectionPath=useMemo(()=>{
+    // Collect all steps the user has seen in this section so far
+    const seen=[...history,currentId].filter(id=>{
+      const s=SM[id];
+      return s&&s.sec===sec&&!['contact','pilot','disc','done'].includes(s.type);
+    });
+    // Project forward from currentId to find remaining required steps in this section
+    const future=[];
+    let next=resolveNext(currentId,answers);
+    for(let i=0;i<20;i++){
+      const s=SM[next];
+      if(!s||s.sec!==sec||next==='END'||['contact','pilot','disc','done'].includes(s.type))break;
+      future.push(next);
+      next=s.next||'END';
+      if(!s.next)break;
+    }
+    // Deduplicate
+    const all=[...new Set([...seen,...future])];
+    return all;
+  },[currentId,history,sec,answers]);
+
+  const qNum=sectionPath.indexOf(currentId)+1;
+  const qTotal=sectionPath.length;
+  const showMeta=sec<5&&qNum>0&&!['contact','pilot','disc','done'].includes(step?.type);
+
+  // ── Fix 4: Dynamic progress based on user's actual path ──────────────────
+  const totalPathLen=useMemo(()=>{
+    // Simulate full path from q1 with current answers to find total steps
+    const path=[];
+    let id='q1';
+    for(let i=0;i<60;i++){
+      path.push(id);
+      const s=SM[id];
+      if(!s)break;
+      const next=resolveNext(id,answers);
+      if(!next||next==='END'||next==='pilot'||path.includes(next))break;
+      id=next;
+    }
+    return Math.max(path.length,1);
+  },[answers]);
+
   const inPilot=sec>=5;
-  const pct=isSubmitted?100:inPilot?100:Math.min(99,Math.round((dotsAnswered/globalQTotal)*100));
+  const pct=isSubmitted?100:inPilot?100:Math.min(99,Math.round((history.length/totalPathLen)*100));
 
-  const rightIsFinish=['pilot','done','contact'].includes(step?.type);
+  // ── Fix 2: Q38 "Not right now" — no auto-advance, just change button ─────
+  const isQ38No=currentId==='q38'&&answers.q38==='Not right now';
+
+  const rightIsFinish=['pilot','done','contact'].includes(step?.type)||isQ38No;
   const otherIsSelected=step?.type==='single-other'&&OTHER_OPTS.includes(answers[currentId]);
   const rightIsNext=step?.type==='multi'||step?.type==='multi-other'||otherIsSelected;
-  // Required questions: Next only when answered, no Skip ever
-  // Optional questions: Skip → on page open, Next when something answered
   const isReq=Boolean(step?.req);
   const rightLabel=rightIsFinish?'Finish':rightIsNext?'Next':answered?'Next':isReq?'Next':'Skip →';
-  const rightActive=rightIsFinish?answered&&!transitioning
+  const rightActive=rightIsFinish?(answered&&!transitioning)||isQ38No
     :rightIsNext?answered&&!transitioning
-    :isReq?(answered&&!transitioning) // required: only active when answered
-    :!transitioning; // optional: always active (skip or next)
+    :isReq?(answered&&!transitioning)
+    :!transitioning;
   const leftActive=history.length>0&&!transitioning;
 
   const nextAfterThis=resolveNext(currentId,answers);
@@ -830,6 +894,7 @@ export default function SurveyPage(){
     resetFill();
     const next=resolveNext(currentId,ans);
     if(!next||next==='END'){doSubmit(ans);return;}
+    trackStep(next,ans); // Fix 7: track every step transition
     setHistory(h=>[...h,currentId]);
     setCurrentId(next);
     setTransitioning(false);
@@ -850,19 +915,21 @@ export default function SurveyPage(){
 
   const handleSingle=useCallback((val)=>{
     if(transitioning)return;
-    setTransitioning(true);
     const upd={...answers,[currentId]:val};
     setAnswers(upd);
+    // Fix 2: Q38 "Not right now" — don't auto-advance, let user click Finish
+    if(currentId==='q38'&&val==='Not right now')return;
+    setTransitioning(true);
     setTimeout(()=>advance(upd),300);
   },[answers,currentId,advance,transitioning]);
 
   async function doSubmit(a){
     setSubmitting(true);setSubmitErr(null);
-    console.log('doSubmit called with keys:', Object.keys(a).filter(k=>a[k]));
     try{
       const rawCity=a.q4||'';const city=normCity(rawCity);
       const contact=a.contact||{};const pilot=a.pilot||{};
-      const finalName=pilot.name||contact.name||a.q1||null;
+      // Fix 9: "Prefer not to say" saves as null
+      const finalName=pilot.name||contact.name||(a.q1==='Prefer not to say'?null:a.q1)||null;
       const finalWA=pilot.whatsapp||contact.whatsapp||null;
       const finalEmail=pilot.email||contact.email||null;
       const oo=(key)=>{const v=a[key];return OTHER_OPTS.includes(v)?(a[key+'_other']||v):v||null;};
@@ -874,68 +941,47 @@ export default function SurveyPage(){
       await supabase.from('responses').insert([{
         session_id:sessionId.current,
         last_question_seen:'completed',
-        // About You
         name:finalName,age:a.q2||null,gender:a.q3||null,city,
         is_bengaluru:isBengaluru(rawCity),
         dietary_restrictions:a.q4b||null,
-        // Goal & Tracking
-        goal:a.q6||null,
-        routine:a.q7||null,
-        nutrition_literacy:a.qnl||null,
-        // Your Approach
+        goal:a.q6||null,routine:a.q7||null,nutrition_literacy:a.qnl||null,
         diet_approach:a.q9||null,
         // Branch A
-        plan_type:oo('q12'),
-        plan_change:arr('q14'),
+        plan_type:oo('q12'),plan_change:arrOther('q14'),
+        tracking_habits:a.qtrk||null,
         // Branch B
-        plan_source:oo('q15'),
-        time_effort_part:arr('q16'),
-        tracking_confidence:a.q17||null,
-        plan_duration:a.qb5||null,
+        plan_source:oo('q15'),time_effort_part:arrOther('q16'),
+        tracking_confidence:a.q17||null,tracking_habits_b:a.qtrk_b||null,
+        meal_repetition:a.qrep||null,plan_duration:a.qb5||null,
         // Branch C
-        healthy_meaning:a.q20||null,
-        progress_doubt:a.q21||null,
-        structure_barrier:arr('q22'),
-        diet_trigger:a.qc5||null,
+        healthy_meaning:oo('q20'),progress_doubt:a.q21||null,
+        structure_barrier:arrOther('q22'),diet_trigger:a.qc5||null,
         // Branch D
-        starting_soon:a.q23||null,
-        start_barrier:arr('q24'),
-        help_preference:a.q25||null,
-        start_trigger:a.qd5||null,
+        starting_soon:a.q23||null,start_barrier:arrOther('q24'),
+        help_preference:a.q25||null,start_trigger:a.qd5||null,
         // Branch E
-        old_approach_type:a.q26||null,
-        stop_reason:arrOther('q27'),
-        restart_condition:arr('q28'),
-        restart_intent:a.qe6||null,
+        old_approach_type:a.q26||null,stop_reason:arrOther('q27'),
+        restart_condition:arrOther('q28'),restart_intent:a.qe6||null,
         // What Matters
-        food_priorities:arr('q31'),
-        help_type:oo('q32'),
-        delegate_task:arr('q33'),
-        willingness_to_pay:a.q34||null,
-        healthy_delivery_tried:a.qhd||null,
-        food_discovery:arr('q35a'),
-        // Wrapping Up
+        food_priorities:arrOther('q31'),help_type:oo('q32'),
+        delegate_task:arrOther('q33'),willingness_to_pay:a.q34||null,
+        healthy_delivery_tried:a.qhd||null,food_discovery:arrOther('q35a'),
+        dealbreaker:a.qdeal||null,
         biggest_pain:a.q36d||null,
-        // Contact
         contact_instagram:contact.instagram||null,
-        contact_whatsapp:finalWA,
-        contact_email:finalEmail,
-        // Pilot
-        pilot_interest:a.q38||null,
-        pilot_locality:pilot.locality||null,
-        pilot_weight:pilot.weight||null,
-        pilot_height:pilot.height||null,
-        pilot_activity:pilot.activity||null,
-        pilot_work_schedule:pilot.schedule||null,
+        contact_whatsapp:finalWA,contact_email:finalEmail,
+        pilot_interest:a.q38||null,pilot_locality:pilot.locality||null,
+        pilot_weight:pilot.weight||null,pilot_height:pilot.height||null,
+        pilot_activity:pilot.activity||null,pilot_work_schedule:pilot.schedule||null,
         disclaimer_ack:false,
         submitted_at:new Date().toISOString(),
       }]);
       setIsSubmitted(true);
     }catch(e){
-      console.error('doSubmit error:', e);
+      console.error('doSubmit error:',e);
       setSubmitErr('Something went wrong. Please try again.');
       setTransitioning(false);
-    }    finally{setSubmitting(false);}
+    }finally{setSubmitting(false);}
   }
 
   const joinedPilot=answers.q38&&answers.q38!=='Not right now'&&isBengaluru(answers.q4);
@@ -1007,7 +1053,7 @@ export default function SurveyPage(){
                     <div className="flex items-start">
                       {showMeta&&(
                         <>
-                          <span style={{...MN,fontSize:12,fontWeight:800,color:'#c0c0c0',lineHeight:'1.5rem',flexShrink:0,paddingTop:3,minWidth:36}}>Q{globalQNum}</span>
+                          <span style={{...MN,fontSize:12,fontWeight:800,color:'#c0c0c0',lineHeight:'1.5rem',flexShrink:0,paddingTop:3,minWidth:44}}>Q{qNum}/{qTotal}</span>
                           <span style={{width:1,background:'#e0e0e0',alignSelf:'stretch',marginRight:10,flexShrink:0}}/>
                         </>
                       )}
@@ -1108,16 +1154,50 @@ export default function SurveyPage(){
   );
 }
 
-function SiteHeader(){
+function AboutContent(){
   return(
-    <header className="sticky top-0 z-10 bg-white border-b-2 border-gray-200 px-4 py-3">
-      <div className="max-w-xl mx-auto flex items-center gap-2.5">
-        <div className="w-7 h-7 bg-gray-900 flex items-center justify-center flex-shrink-0">
-          <span className="text-white text-[10px] font-bold" style={MN}>e8</span>
-        </div>
-        <span className="font-bold text-gray-900 text-sm" style={MN}>e8n8</span>
+    <div className="space-y-5">
+      <p style={{...FR,fontSize:16,fontWeight:700,color:'#111'}}>About This Survey</p>
+      <p style={{color:'#666',fontSize:12}}>e8n8 Research Initiative</p>
+      <div>
+        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>Who we are</p>
+        <p>We are a small team doing early-stage research into how people in India approach food, fitness, and everyday diet decisions. We are not a brand, not a service, and not selling anything — yet.</p>
       </div>
-    </header>
+      <div>
+        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>Why this survey exists</p>
+        <p>Before building anything, we want to understand real behaviour and real frustrations — from real people. This survey is the first step in that process. Your answers shape what we explore next.</p>
+      </div>
+      <div>
+        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>What we do with your answers</p>
+        <p>Responses are used purely for internal research. We look for patterns, not individuals. We do not share, sell, or use your data for advertising of any kind.</p>
+      </div>
+      <div>
+        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>The Bangalore pilot</p>
+        <p>We are exploring whether there is a real need for something specific to the Bangalore market. If you are based there and express interest, we may reach out when we have something concrete — personally, not through a bulk campaign.</p>
+      </div>
+      <p style={{color:'#bbb',fontSize:11,marginTop:12}}>Questions? Reach us at hello@e8n8.in</p>
+    </div>
+  );
+}
+
+function SiteHeader(){
+  const[modal,setModal]=useState(null);
+  return(
+    <>
+      {modal==='about'&&<Modal title="About" onClose={()=>setModal(null)}><AboutContent/></Modal>}
+      <header className="sticky top-0 z-10 bg-white border-b-2 border-gray-200 px-4 py-3">
+        <div className="max-w-xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 bg-gray-900 flex items-center justify-center flex-shrink-0">
+              <span className="text-white text-[10px] font-bold" style={MN}>e8</span>
+            </div>
+            <span className="font-bold text-gray-900 text-sm" style={MN}>e8n8</span>
+          </div>
+          <button type="button" onClick={()=>setModal('about')}
+            className="text-xs text-gray-400 hover:text-gray-700 underline" style={MN}>About</button>
+        </div>
+      </header>
+    </>
   );
 }
 // ─── Modal ────────────────────────────────────────────────────────────────────
