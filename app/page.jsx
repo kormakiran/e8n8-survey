@@ -875,9 +875,15 @@ export default function SurveyPage(){
   function resetFill(){if(fillTick.current)clearInterval(fillTick.current);setFillW(0);}
   useEffect(()=>()=>{if(fillTick.current)clearInterval(fillTick.current);},[]);
 
-  const sessionId=useRef(typeof crypto!=='undefined'?crypto.randomUUID():'sess-'+Date.now());
-  // Capture ?src= URL param for channel tracking
-  const sourceRef=useRef(typeof window!=='undefined'?new URLSearchParams(window.location.search).get('src')||null:null);
+  const sessionId=useRef(null);
+  useEffect(()=>{
+    // Generate fresh session ID on every page load
+    sessionId.current=typeof crypto!=='undefined'?crypto.randomUUID():'sess-'+Date.now();
+    // Capture ?src= URL param for channel tracking
+    const params=new URLSearchParams(window.location.search);
+    const src=params.get('src');
+    if(src)sourceRef.current=src;
+  },[]);
 
   const advance=useCallback((ans)=>{
     resetFill();
