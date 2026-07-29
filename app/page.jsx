@@ -876,6 +876,7 @@ export default function SurveyPage(){
   useEffect(()=>()=>{if(fillTick.current)clearInterval(fillTick.current);},[]);
 
   const sessionId=useRef(null);
+  const sourceRef=useRef(null);
   useEffect(()=>{
     // Generate fresh session ID on every page load
     sessionId.current=typeof crypto!=='undefined'?crypto.randomUUID():'sess-'+Date.now();
