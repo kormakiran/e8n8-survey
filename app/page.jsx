@@ -13,123 +13,196 @@ function normCity(c=''){return c.replace(/bangalore/gi,'Bengaluru');}
 function isBengaluru(c=''){const l=c.toLowerCase();return l.includes('bengaluru')||l.includes('bangalore');}
 
 const TOP_CITIES=['Bengaluru','Mumbai','Delhi','Hyderabad','Pune','Chennai','Kolkata','Ahmedabad','Gurgaon','Noida'];
-const ALL_CITIES=['Bengaluru','Mumbai','Delhi','Hyderabad','Pune','Chennai','Kolkata','Ahmedabad','Gurgaon','Noida',
-  'Jaipur','Surat','Lucknow','Nagpur','Indore','Thane','Bhopal','Visakhapatnam','Patna','Vadodara',
-  'Ghaziabad','Ludhiana','Agra','Nashik','Faridabad','Meerut','Rajkot','Varanasi','Chandigarh',
-  'Guwahati','Thiruvananthapuram','Mysuru','Kochi','Coimbatore','Madurai','Mangaluru','Navi Mumbai','Ranchi','Jodhpur'];
+const ALL_CITIES=[
+  'Agartala','Agra','Ahmedabad','Aizawl','Ajmer','Akola','Aligarh','Allahabad','Alwar','Ambala',
+  'Amravati','Amritsar','Anand','Anantapur','Asansol','Aurangabad','Bareilly','Belgaum','Bengaluru','Bhavnagar',
+  'Bhilai','Bhiwandi','Bhiwani','Bhopal','Bhubaneswar','Bikaner','Bilaspur','Bokaro','Chandigarh','Chennai',
+  'Coimbatore','Cuttack','Dahod','Darbhanga','Davanagere','Dehradun','Delhi','Dhanbad','Dharwad','Dibrugarh',
+  'Durgapur','Erode','Faridabad','Firozabad','Gandhinagar','Ghaziabad','Gorakhpur','Gulbarga','Guntur','Gurgaon',
+  'Guwahati','Gwalior','Hapur','Haridwar','Hubli','Hyderabad','Imphal','Indore','Itanagar','Jabalpur',
+  'Jaipur','Jalandhar','Jalgaon','Jammu','Jamnagar','Jamshedpur','Jhansi','Jodhpur','Kakinada','Kalyan',
+  'Kanpur','Karnal','Kochi','Kohima','Kolhapur','Kolkata','Kota','Kottayam','Kozhikode','Kumbakonam',
+  'Kurnool','Lucknow','Ludhiana','Madurai','Malegaon','Mangaluru','Meerut','Moradabad','Mumbai','Muzaffarpur',
+  'Mysuru','Nagpur','Nashik','Navi Mumbai','Nellore','Noida','Panaji','Patna','Pimpri-Chinchwad','Pondicherry',
+  'Pune','Raipur','Rajkot','Rajahmundry','Ranchi','Rourkela','Saharanpur','Salem','Sangli','Shillong',
+  'Shimla','Siliguri','Solapur','Srinagar','Surat','Thane','Thiruvananthapuram','Tiruchirappalli','Tirunelveli',
+  'Tirupati','Tiruppur','Ujjain','Vadodara','Varanasi','Vellore','Vijayawada','Visakhapatnam','Warangal','Yamunanagar',
+];
 
-const SEC=[{n:'About You',q:4},{n:'Goal & Tracking',q:3},{n:'Your Approach',q:5},{n:'What Matters',q:6},{n:'Wrapping Up',q:2}];
+const SEC=[{n:'About You',q:5},{n:'Goal & Tracking',q:3},{n:'Your Approach',q:4},{n:'What Matters',q:5},{n:'Wrapping Up',q:1}];
 const TOTAL_MAIN=SEC.reduce((s,x)=>s+x.q,0);
 
-// q1: name is now single-choice style (so req:true works cleanly with "Prefer not to say")
-// q3: gender also has "Prefer not to say" — both req:true
-// q10 removed (redundant rating question)
-// q34 added — willingness to pay (critical business validation)
+const OTHER_A='Something else — tell us what';
+const OTHER_B='Something else — describe it';
+const OTHER_C='Something else — tell me more';
+const OTHER_E='Another reason — what was it?';
+const OTHER_OPTS_LIST=['Something else — tell us what','Something else — describe it','Something else — tell me more','Another reason — what was it?'];
+
 const STEPS=[
+  // ── Section 0 — About You (5) ─────────────────────────────────────────────
   {id:'q1', sec:0,qi:1,type:'name',  req:true, title:`What's your name?`,next:'q2'},
-  {id:'q2', sec:0,qi:2,type:'single',req:true, title:'How old are you?',opts:['Under 25','25–34','35–44','45+','Prefer not to say'],next:'q3'},
-  {id:'q3', sec:0,qi:3,type:'single',req:true, title:`What's your gender?`,opts:['Male','Female','Prefer not to say'],next:'q4'},
-  {id:'q4', sec:0,qi:4,type:'city',  req:true, title:'Which city or area are you in?',next:'q5'},
+  {id:'q2', sec:0,qi:2,type:'single',req:true, title:'How old are you?',
+   opts:['Under 25','25–34','35–44','45+','Prefer not to say'],next:'q3'},
+  {id:'q3', sec:0,qi:3,type:'single',req:false,title:`What's your gender?`,
+   opts:['Male','Female','Non-binary','Prefer not to say'],next:'q4'},
+  {id:'q4', sec:0,qi:4,type:'city',  req:true, title:'Which city or area are you in?',next:'q4b'},
+  {id:'q4b',sec:0,qi:5,type:'single',req:true,
+   title:'Which best describes your diet?',
+   opts:['Vegetarian','Non-vegetarian','Vegan','Jain','No specific restrictions'],next:'q5'},
 
-  {id:'q5', sec:1,qi:1,type:'single',req:true, title:'Which best describes your fitness journey?',
-   opts:['Just starting out','Been at it a while','Very experienced','Not working out right now'],next:'q6'},
-  {id:'q6', sec:1,qi:2,type:'single',req:true, title:'Do you have a specific fitness goal right now?',
-   opts:['Lose weight / fat','Gain muscle','Stay the same','No specific goal'],next:'q7'},
-  {id:'q7', sec:1,qi:3,type:'single',req:true, title:'Which best describes your current routine?',
-   opts:['Gym and diet, both together','Only gym, not really watching my diet','Only diet, not really working out','Neither right now'],next:'q9'},
+  // ── Section 1 — Goal & Tracking (3) ──────────────────────────────────────
+  {id:'q5', sec:1,qi:1,type:'single',req:true,
+   title:'Which best describes your fitness journey right now?',
+   opts:['Just starting out','Been at it a while','Very consistent and experienced','Not really working out right now'],next:'q6'},
+  {id:'q6', sec:1,qi:2,type:'single',req:true,
+   title:'What is your fitness goal right now?',
+   opts:['Lose weight or body fat','Gain muscle','Improve stamina or fitness','Stay at my current weight','No specific goal right now'],next:'q7'},
+  {id:'q7', sec:1,qi:3,type:'single',req:true,
+   title:'Which best describes your current routine?',
+   opts:['Gym and diet, both together','Only gym — not really watching my diet','Only diet — not really working out','Neither right now'],next:'qnl'},
 
-  {id:'q9', sec:2,qi:1,type:'single',req:true, title:'What are you currently doing about your diet?',
-   opts:['Following a structured paid plan','Trying on my own with a structured plan','Trying on my own without a structured plan','Not doing anything specific',`I used to, but I've stopped`],next:'q11'},
-  {id:'q11',sec:2,qi:2,type:'single',req:true, title:'Who usually handles your food day to day?',
+  // ── QNL — nutrition literacy (optional, shown after Q7) ──────────────────
+  {id:'qnl',sec:1,qi:0,type:'single',req:false,
+   title:'How familiar are you with concepts like calorie deficit, protein targets, or macros?',
+   opts:['I track them actively and know my numbers','I understand them but don\'t follow them strictly','I\'ve heard of them but don\'t really know how they work','Not familiar at all'],next:'q9'},
+
+  // ── Section 2 — Your Approach ─────────────────────────────────────────────
+  {id:'q9', sec:2,qi:1,type:'single',req:true,
+   title:'What are you currently doing about your diet?',
+   opts:['Following a structured paid plan','Trying on my own with a structured plan','Trying on my own without any structure','Not doing anything specific',"I used to, but I've stopped"],next:'q11'},
+
+  {id:'q11',sec:2,qi:2,type:'single',req:true,
+   title:'Who usually handles your food day to day?',
    opts:['I cook for myself','Family cooks','We have a cook','My meal plan provides it','I order in most days','A mix of these'],
    branch:(a)=>({'Following a structured paid plan':'q12','Trying on my own with a structured plan':'q15',
-     'Trying on my own without a structured plan':'q20','Not doing anything specific':'q23',
+     'Trying on my own without any structure':'q20','Not doing anything specific':'q23',
      "I used to, but I've stopped":'q26'}[a.q9])},
 
-  // Branch A — Paid plan (qi 3,4,5)
-  {id:'q12',sec:2,qi:3,type:'single',req:true,title:'What kind of paid plan is it?',
-   opts:['Dietician or nutritionist','Meal delivery subscription (EatFit, Curefoods, Eat Club…)','Fitness app or coach','Other'],next:'q13'},
-  {id:'q13',sec:2,qi:4,type:'single',req:true,title:'Are you still using it right now?',
-   opts:['Yes, currently using it',`No, I've stopped`,"I've paused it for now"],next:'q14'},
-  {id:'q14',sec:2,qi:5,type:'single',req:true,title:'If you could change one thing about it, what would it be?',
-   opts:['Make it cheaper','Add more variety','Make it more flexible',"Nothing — I'm happy with it"],next:'q31'},
+  // Branch A — Paid plan (Q12 → Q14 → Q31)
+  {id:'q12',sec:2,qi:3,type:'single-other',req:true,
+   title:'What kind of paid plan is it?',
+   opts:['Dietician or nutritionist','Meal delivery service (EatFit, Curefoods, Eat Club…)','Fitness app or online coach',OTHER_A],next:'q14'},
+  {id:'q14',sec:2,qi:4,type:'multi',req:true,hint:'Select all that apply.',
+   title:'If you could change things about it, what would you change?',
+   opts:['Make it cheaper','Improve the food quality','Add more variety','Make it more flexible','Nothing — I am happy with it'],next:'q31'},
 
-  // Branch B — Own structured (qi 3,4,5)
-  {id:'q15',sec:2,qi:3,type:'single',req:true,title:'Where does your meal plan or structure come from?',
-   opts:['I researched and designed it myself','A friend, trainer, or influencer gave me guidelines','A free plan I found online','A mix of sources'],next:'q16'},
-  {id:'q16',sec:2,qi:4,type:'single',req:true,title:'Which part takes the most time or effort?',
-   opts:['Deciding what to eat','Buying groceries','Cooking','Logging what I eat',"None of these — it's easy"],next:'q17'},
-  {id:'q17',sec:2,qi:5,type:'single',req:true,title:`How confident are you that what you're eating actually matches your goal?`,
-   opts:["Very confident","Somewhat — I'm estimating a lot","Not very confident","I don't really check"],next:'q31'},
+  // Branch B — Own structured
+  {id:'q15',sec:2,qi:3,type:'single-other',req:true,
+   title:'Where does your meal plan or structure come from?',
+   opts:['I researched and designed it myself','A friend, trainer, or influencer gave me guidelines','A free plan I found online','A mix of sources',OTHER_B],next:'q16'},
+  {id:'q16',sec:2,qi:4,type:'multi',req:true,hint:'Select all that apply.',
+   title:'Which parts take the most time or effort?',
+   opts:['Deciding what to eat','Buying groceries','Cooking or meal prep','Logging what I eat','Staying consistent',"None — it's easy"],next:'q17'},
+  {id:'q17',sec:2,qi:5,type:'single',req:true,
+   title:`How confident are you that what you're eating actually matches your goal?`,
+   opts:['Very confident',"Somewhat — I'm estimating a lot",'Not very confident',"I don't really track it"],next:'qb5'},
+  {id:'qb5',sec:2,qi:0,type:'single',req:false,
+   title:'How long have you been following this structure?',
+   opts:['Less than a month','1–3 months','3–6 months','More than 6 months'],next:'q31'},
 
-  // Branch C — No structure (qi 3,4,5)
-  {id:'q20',sec:2,qi:3,type:'single',req:true,title:'What does "eating healthy" mean to you day to day?',
-   opts:['Cutting certain foods','Watching portions','General balance, no strict rules','Just eating less overall'],next:'q21'},
-  {id:'q21',sec:2,qi:4,type:'single',req:true,title:`Do you ever wonder if what you're doing is actually working?`,
-   opts:['Often','Sometimes','Rarely',"I'm not really tracking progress"],next:'q22'},
-  {id:'q22',sec:2,qi:5,type:'single',req:true,title:`What's stopped you from adding more structure?`,
-   opts:['Too much effort',"Don't know how","Haven't felt the need to","Tried before and didn't like it"],next:'q31'},
+  // Branch C — No structure
+  {id:'q20',sec:2,qi:3,type:'single',req:true,
+   title:'What does eating healthy mean to you day to day?',
+   opts:['Eating home-cooked food','Cutting out certain foods','Watching portions','General balance with no strict rules','Just eating a little less overall'],next:'q21'},
+  {id:'q21',sec:2,qi:4,type:'single',req:true,
+   title:`Do you ever wonder if what you're doing is actually working?`,
+   opts:['Yes, often','Sometimes','Rarely',"I'm not really tracking anything"],next:'q22'},
+  {id:'q22',sec:2,qi:5,type:'multi',req:true,hint:'Select all that apply.',
+   title:`What's stopped you from being more structured about your diet?`,
+   opts:['Too much effort',"Don't know where to start",'Eating with family makes it hard',"Haven't felt the need to","Tried before and it didn't work for me"],next:'qc5'},
+  {id:'qc5',sec:2,qi:0,type:'single',req:false,
+   title:'What first made you start paying attention to what you eat?',
+   opts:['Started going to the gym',"Doctor's advice or a health scare","Saw someone else's results",'Gained or lost weight noticeably','Just decided it was time'],next:'q31'},
 
-  // Branch D — Not doing anything (qi 3,4,5)
-  {id:'q23',sec:2,qi:3,type:'single',req:true,title:`Is this something you're thinking about starting soon?`,
-   opts:['Yes, actively considering it','Maybe eventually','Not really a priority right now'],next:'q24'},
-  {id:'q24',sec:2,qi:4,type:'single',req:true,title:'What feels like the biggest barrier to starting?',
-   opts:['Cost','Not knowing where to start','Time or effort','Motivation'],next:'q25'},
-  {id:'q25',sec:2,qi:5,type:'single',req:true,title:'If you did start, would you want to do it yourself or have help?',
-   opts:['Do it myself with some guidance','Want it mostly handled for me','Not sure yet'],next:'q31'},
+  // Branch D — Not doing anything
+  {id:'q23',sec:2,qi:3,type:'single',req:true,
+   title:`Is this something you're thinking about starting?`,
+   opts:['Yes, actively thinking about it','Maybe eventually','Not really a priority right now'],next:'q24'},
+  {id:'q24',sec:2,qi:4,type:'multi',req:true,hint:'Select all that apply.',
+   title:'What feels like the biggest barrier to starting?',
+   opts:['Cost','Not knowing where to start','Not sure what actually works for me','Time or effort required','Lack of motivation'],next:'q25'},
+  {id:'q25',sec:2,qi:5,type:'single',req:true,
+   title:'If you did start, would you want to figure it out yourself or have it handled for you?',
+   opts:['Figure it out myself with some guidance','Want it mostly handled for me','Not sure yet'],next:'qd5'},
+  {id:'qd5',sec:2,qi:0,type:'single',req:false,
+   title:'What would actually make you start this week?',
+   opts:['If someone told me exactly what to eat','If it was affordable and easy to access','If I saw proof it actually works','Honestly nothing right now — not the right time'],next:'q31'},
 
-  // Branch E — Used to, stopped (qi 3,4,5)
-  {id:'q26',sec:2,qi:3,type:'single',req:true,title:'What approach did you follow before you stopped?',
-   opts:['A paid plan','My own structured tracking','A casual effort with no strict structure'],next:'q27'},
-  {id:'q27',sec:2,qi:4,type:'single',req:true,title:'What led you to stop?',
-   opts:['Life got busy','Lost motivation or got bored','Too expensive','Too much effort',"Didn't see results",'Other'],next:'q28'},
-  {id:'q28',sec:2,qi:5,type:'single',req:true,title:'What would need to be different for you to try again?',
-   opts:['Lower cost','Less effort required','More flexibility','Better results',`I'm not interested in trying again`],next:'q31'},
+  // Branch E — Used to, stopped
+  {id:'q26',sec:2,qi:3,type:'single',req:true,
+   title:'What approach did you follow before?',
+   opts:['A paid plan or dietician','My own structured tracking','A casual effort with no strict structure'],next:'q27'},
+  {id:'q27',sec:2,qi:4,type:'multi-other',req:true,
+   title:'What led you to stop?',
+   opts:['Life got busy','Lost motivation or got bored','Too expensive','Too much effort to maintain',"Didn't see results",OTHER_E],next:'q28'},
+  {id:'q28',sec:2,qi:5,type:'multi',req:true,hint:'Select all that apply.',
+   title:'What would need to be different for you to try again?',
+   opts:['Lower cost','Less effort on my end','More flexibility','Seeing actual results','Someone to keep me accountable',"I'm not looking to try again"],next:'qe6'},
+  {id:'qe6',sec:2,qi:0,type:'single',req:false,
+   title:'Are you actively looking for something to restart with, or just open if the right thing came along?',
+   opts:['Actively looking for something right now','Open if the right thing came along','Not really thinking about it right now'],next:'q31'},
 
-  // Section 3 — What Matters (4 questions now, including WTP)
-  {id:'q31',sec:3,qi:1,type:'multi', req:true, hint:'Select all that apply.',
+  // ── Section 3 — What Matters (5) ─────────────────────────────────────────
+  {id:'q31',sec:3,qi:1,type:'multi',req:true,hint:'Select all that apply.',
    title:'Which of these matters most to you about the food you eat day to day?',
-   opts:['Taste','Cost','Time and effort','Getting the right nutrition for my goal','Variety','Flexibility'],next:'q32'},
-  {id:'q32',sec:3,qi:2,type:'single',req:true,title:'What kind of help with your diet would suit you best?',
-   opts:['Fully done for me — minimal decisions on my part','Guided — with some choices left to me','Just occasional support or reminders',"I don't think I need help right now"],next:'q33'},
-  {id:'q33',sec:3,qi:3,type:'single',req:true,title:'If someone could handle one part of your food routine, what would it be?',
-   opts:['Deciding what to eat','Preparing or cooking','Keeping track of what I eat','Shopping for ingredients','Nothing — I prefer doing it myself'],next:'q34'},
+   opts:['Taste','Cost','Time and effort to get it','Knowing my calories or macros','Getting the right nutrition for my goal','Variety','Portion size'],next:'q32'},
+  {id:'q32',sec:3,qi:2,type:'single-other',req:true,
+   title:'What kind of support with your diet would suit you best?',
+   opts:['Fully handled for me — I just eat it','Guided — with some choices left to me','Occasional reminders or nudges',"I don't think I need support right now",'Something else — tell me more'],next:'q33'},
+  {id:'q33',sec:3,qi:3,type:'multi',req:false,hint:'Select all that apply.',
+   title:'If someone could take over parts of your food routine, what would help most?',
+   opts:['Deciding what to eat','Cooking or preparing it','Tracking what I eat','Shopping for groceries','Nothing — I prefer doing it myself'],next:'q34'},
   {id:'q34',sec:3,qi:4,type:'single',req:true,
    title:'How much would you be okay spending per day on food that fits your fitness goal?',
-   opts:['Under ₹200','₹200–350','₹350–500','₹500–700','₹700 or more'],next:'q35a'},
-  {id:'q35a',sec:3,qi:5,type:'single',req:true,
-   title:'How do you usually find out about food options that fit your goals?',
-   opts:['Social media or influencers','Friends or word of mouth','I research myself','I just eat what is convenient','I don\'t look for specific options'],next:'q35b'},
-  {id:'q35b',sec:3,qi:6,type:'single',req:true,
-   title:'How often do you currently order food in?',
-   opts:['Daily','4–5 times a week','2–3 times a week','Once a week or less','Rarely or never'],next:'q36'},
+   opts:['Under ₹200','₹200–350','₹350–500','₹500–700','₹700 or more'],branch:(a)=>a.q9==='Following a structured paid plan'?'q36d':'qhd'},
+  {id:'qhd',sec:3,qi:5,type:'single',req:false,
+   title:'Have you ever ordered food specifically because it was marketed as healthy or good for your goals?',
+   opts:['Yes, and it worked well for me',"Yes, but it didn't stick","No, but I'd be open to trying","No, I prefer cooking or making my own choices"],
+   next:'q35a'},
+  {id:'q35a',sec:3,qi:5,type:'multi',req:false,hint:'Select all that apply.',
+   title:'How do you usually discover food options that match your goals?',
+   opts:['Social media or influencers','Friends or word of mouth','I research and look it up myself','I ask my trainer or coach',"I don't look — I eat whatever is available"],next:'q36d'},
 
-  // Section 4 — Wrapping Up
-  {id:'q36',    sec:4,qi:1,type:'text',   req:false,long:true,title:`Anything else you'd like to share?`,
+  // ── Section 4 — Wrapping Up (1) ──────────────────────────────────────────
+  {id:'q36d',sec:4,qi:1,type:'text',req:false,long:true,
+   title:'What is the single biggest problem with how you eat right now?',
+   hint:'Optional but very useful — be as specific as you like.',
    branch:(a)=>isBengaluru(a.q4)?'q38':'contact'},
-  {id:'contact',sec:4,qi:2,type:'contact',req:false,
+
+  // ── Pilot gate ────────────────────────────────────────────────────────────
+  {id:'contact',sec:4,qi:0,type:'contact',req:false,
    title:'Want us to reach out if we build something?',
    hint:'Totally optional. We never sell your details or send unsolicited messages.',
    next:'END'},
-
-  // Section 5 — Pilot
   {id:'q38',sec:5,qi:0,type:'single',req:true,
-   title:'Would you be interested in joining an early pilot in Bangalore?',
-   opts:['Yes, definitely','Maybe — depends on the details','Not right now'],
-   branch:(a)=>{if(a.q38==='Not right now')return 'done';return isBengaluru(a.q4)?'pilot':'done';}},
-  {id:'pilot',sec:5,qi:0,type:'pilot',req:true,title:'A couple more details',next:'disc'},
-  {id:'disc', sec:5,qi:0,type:'disc', req:true, title:'One last thing',next:'END'},
+   title:'Would you be open to joining an early pilot in Bangalore?',
+   opts:['Yes, definitely','Maybe — tell me more when it is ready','Not right now'],
+   branch:(a)=>{if(a.q38==='Not right now')return 'done';return 'pilot';}},
+  {id:'pilot',sec:5,qi:0,type:'pilot',req:true,title:'A couple more details',next:'END'},
   {id:'done', sec:5,qi:0,type:'done', req:false,title:'',next:'END'},
 ];
 
 const SM=Object.fromEntries(STEPS.map(s=>[s.id,s]));
 function resolveNext(id,a){const s=SM[id];if(!s)return 'END';if(s.branch)return s.branch(a);return s.next||'END';}
+const OTHER_OPTS=OTHER_OPTS_LIST;
 function isAnswered(id,a){
   const s=SM[id];if(!s||!s.req)return true;
   const v=a[id];
-  if(s.type==='multi')return Array.isArray(v)&&v.length>0;
-  if(s.type==='pilot'){const p=a.pilot||{};return Boolean(p.locality?.trim())&&Boolean(p.whatsapp?.trim()||p.email?.trim());}
-  if(s.type==='disc')return Boolean(a.disclaimerAck);
+  if(s.type==='multi'||s.type==='multi-other')return Array.isArray(v)&&v.length>0;
+  if(s.type==='single-other'){
+    if(!v)return false;
+    if(OTHER_OPTS.includes(v))return Boolean(a[id+'_other']?.trim());
+    return true;
+  }
+  if(s.type==='pilot'){
+    const p=a.pilot||{};
+    const hasLocality=Boolean(p.locality?.trim());
+    const waVal=p.whatsapp||'';
+    const waStripped=waVal.replace(/^\+?91/,'').replace(/[\s\-]/g,'').replace(/\D/g,'');
+    const hasWA=Boolean(waVal.trim())&&waStripped.length===10;
+    const hasEmail=Boolean(p.email?.trim())&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email.trim());
+    return hasLocality&&(hasWA||hasEmail);
+  }
   if(s.type==='name')return Boolean(v&&String(v).trim());
   if(s.type==='city')return Boolean(v&&String(v).trim());
   return Boolean(v&&String(v).trim());
@@ -148,8 +221,8 @@ const section=(children)=>(
 function Badge({req}){
   const base={display:'inline-flex',alignItems:'center',gap:4,padding:'3px 8px',fontSize:10,fontWeight:700,letterSpacing:'.06em',...MN,whiteSpace:'nowrap'};
   return req
-    ?<span style={{...base,background:'#111',color:'#fff'}}><span style={{width:5,height:5,background:'#fff',display:'inline-block',flexShrink:0}}/>Required</span>
-    :<span style={{...base,background:'#f3f3f3',color:'#666',border:'1px solid #ddd'}}>Optional</span>;
+    ?<span style={{...base,background:'#dcfce7',color:'#166534',border:'1px solid #bbf7d0'}}><span style={{width:5,height:5,background:'#16a34a',display:'inline-block',flexShrink:0,borderRadius:'50%'}}/>Required</span>
+    :<span style={{...base,background:'#dbeafe',color:'#1e40af',border:'1px solid #bfdbfe'}}>Optional</span>;
 }
 
 // ─── Option button ────────────────────────────────────────────────────────────
@@ -168,6 +241,74 @@ function Opt({label,idx,selected,onClick}){
   );
 }
 
+// ─── SingleOther — single select with inline text field for "Something else" ──
+function SingleOther({step,value,otherValue,onChange,onOtherChange,onAdvance}){
+  const isOtherOpt=(o)=>OTHER_OPTS.includes(o);
+  const otherSelected=isOtherOpt(value);
+  return(
+    <div className="space-y-2">
+      {step.opts?.map((o,i)=>{
+        const isOther=isOtherOpt(o);
+        const sel=value===o;
+        return(
+          <div key={o}>
+            <Opt label={isOther?o.replace(' — ','\n— '):o} idx={i} selected={sel} onClick={()=>{
+              if(isOther){
+                // selecting Other — clear any previous regular answer, show text field
+                onChange(o);
+                onOtherChange('');
+              } else {
+                // selecting regular — clear other text, auto-advance
+                onChange(o);
+                onOtherChange('');
+                setTimeout(()=>onAdvance(),300);
+              }
+            }}/>
+            {sel&&isOther&&(
+              <input autoFocus type="text" value={otherValue||''}
+                onChange={e=>onOtherChange(e.target.value)}
+                onFocus={e=>setTimeout(()=>e.target.scrollIntoView({behavior:'smooth',block:'nearest'}),300)}
+                placeholder="Please specify…" style={MN} className={inp+' mt-2'}/>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── MultiOther — multi select with inline text field for "Something else" ────
+function MultiOther({step,value=[],otherValue,onChange,onOtherChange}){
+  const isOtherOpt=(o)=>OTHER_OPTS.includes(o);
+  const sel=(o)=>Array.isArray(value)&&value.includes(o);
+  function toggle(o){
+    const cur=Array.isArray(value)?[...value]:[];
+    const idx=cur.indexOf(o);
+    const next=idx>-1?cur.filter(v=>v!==o):[...cur,o];
+    onChange(next);
+    // clear other text if Other is being deselected
+    if(idx>-1&&isOtherOpt(o))onOtherChange('');
+  }
+  return(
+    <div className="space-y-2">
+      {step.opts?.map((o,i)=>{
+        const isOther=isOtherOpt(o);
+        return(
+          <div key={o}>
+            <Opt label={o} idx={i} selected={sel(o)} onClick={()=>toggle(o)}/>
+            {sel(o)&&isOther&&(
+              <input autoFocus type="text" value={otherValue||''}
+                onChange={e=>onOtherChange(e.target.value)}
+                onFocus={e=>setTimeout(()=>e.target.scrollIntoView({behavior:'smooth',block:'nearest'}),300)}
+                placeholder="Please specify…" style={MN} className={inp+' mt-2'}/>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Progress bar ─────────────────────────────────────────────────────────────
 function ProgressBar({pct}){
   return(
@@ -180,7 +321,7 @@ function ProgressBar({pct}){
   );
 }
 
-// ─── CircleProgress — fills black as survey progresses, party at 100% ────────
+// ─── CircleProgress ───────────────────────────────────────────────────────────
 function CircleProgress({pct}){
   const r=18,c=2*Math.PI*r,filled=(pct/100)*c;
   const done=pct>=100;
@@ -188,14 +329,14 @@ function CircleProgress({pct}){
     <div style={{position:'relative',width:44,height:44,flexShrink:0}}>
       <svg width="44" height="44" viewBox="0 0 44 44" style={{transform:'rotate(-90deg)'}}>
         <circle cx="22" cy="22" r={r} fill="none" stroke="#e5e5e5" strokeWidth="3"/>
-        <circle cx="22" cy="22" r={r} fill="none" stroke="#111" strokeWidth="3"
+        <circle cx="22" cy="22" r={r} fill={done?'#111':'none'} stroke="#111" strokeWidth="3"
           strokeDasharray={`${filled} ${c}`} strokeLinecap="butt"
           style={{transition:'stroke-dasharray 400ms ease'}}/>
       </svg>
-      <span style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',
-        fontSize:done?16:10,fontWeight:800,color:'#111',...MN}}>
-        {done?'🎉':`${pct}%`}
-      </span>
+      {!done&&<span style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',
+        fontSize:10,fontWeight:800,color:'#111',...MN}}>
+        {pct}%
+      </span>}
     </div>
   );
 }
@@ -212,17 +353,19 @@ function NavBtn({label,onClick,active,side}){
   );
 }
 
-// ─── CityInput — top 10 quick chips + typeahead ───────────────────────────────
+// ─── CityInput — top 10 quick chips + typeahead for 150+ cities + any free text ─
 function CityInput({value,onChange,onSelect}){
   const[q,setQ]=useState(value||'');
   const[open,setOpen]=useState(false);
   useEffect(()=>{setQ(value||'');},[value]);
   const filtered=ALL_CITIES.filter(c=>c.toLowerCase().includes(q.toLowerCase())&&q.length>0&&c.toLowerCase()!==q.toLowerCase()).slice(0,6);
+  // If typed text doesn't match anything in the list, show it as a "use this" option
+  const showFreeText=q.length>1&&!ALL_CITIES.some(c=>c.toLowerCase()===q.toLowerCase())&&filtered.length===0;
   function pick(city){
     setQ(city);
-    onChange(city);      // update parent answers.q4
+    onChange(city);
     setOpen(false);
-    setTimeout(()=>onSelect(city),300); // pass city so caller can advance with correct value
+    setTimeout(()=>onSelect(city),300);
   }
   return(
     <div>
@@ -242,15 +385,21 @@ function CityInput({value,onChange,onSelect}){
         <input type="text" value={q}
           onChange={e=>{setQ(e.target.value);onChange(e.target.value);setOpen(true);}}
           onFocus={()=>setOpen(true)} onBlur={()=>setTimeout(()=>setOpen(false),160)}
-          placeholder="Or type any city…" style={MN} className={inp}/>
-        {open&&filtered.length>0&&(
+          placeholder="Type your city…" style={MN} className={inp}/>
+        {open&&(filtered.length>0||showFreeText)&&(
           <div className="absolute z-20 w-full bg-white border-2 border-gray-200 shadow-xl overflow-hidden" style={{borderTop:'none'}}>
             {filtered.map(city=>(
               <button key={city} type="button" onMouseDown={()=>pick(city)} style={MN}
-                className="w-full text-left px-4 py-3 text-sm text-gray-800 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
+                className="w-full px-4 py-3 text-sm font-semibold text-left text-gray-800 hover:bg-gray-50 border-b border-gray-100 last:border-0">
                 {city}
               </button>
             ))}
+            {showFreeText&&(
+              <button type="button" onMouseDown={()=>pick(q)} style={MN}
+                className="w-full px-4 py-3 text-sm font-semibold text-left text-gray-800 hover:bg-gray-50 flex items-center gap-2">
+                <span className="text-gray-400 text-xs">Use</span> {q}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -301,129 +450,136 @@ function ContactFields({value={},onChange,prefillName=''}){
 }
 
 // ─── PilotFields ─────────────────────────────────────────────────────────────
-const WT=['Under 50 kg','50–65 kg','65–80 kg','80–95 kg','95 kg+'];
-const HT=['Under 150 cm','150–160 cm','160–170 cm','170–180 cm','180 cm+'];
 const ACTS=['Sedentary (little or no exercise)','Light (1–3 days/week)','Moderate (3–5 days/week)','Very active (6–7 days/week)'];
 const SCHED=['Student','Desk job, fixed hours','Shift work','Flexible / freelance'];
-function validatePhone(v){return !v||v.replace(/\D/g,'').length>=10;}
-function validateEmail(v){return !v||v.includes('@');}
+function validatePhone(v){
+  if(!v)return true;
+  // Strip +91 or 91 prefix, then spaces/dashes
+  const stripped=v.replace(/^\+?91/,'').replace(/[\s\-]/g,'');
+  const digits=stripped.replace(/\D/g,'');
+  return digits.length===10;
+}
+function validateEmail(v){return !v||(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));}
 
 function PilotFields({value={},onChange,contact={}}){
   const[d,setD]=useState(()=>({
     name:contact.name||'',whatsapp:contact.whatsapp||'',email:contact.email||'',
-    locality:'',weight:'',weightCustom:'',height:'',heightCustom:'',activity:'',schedule:'',...value,
+    locality:'',weight:'',height:'',activity:'',schedule:'',...value,
   }));
-  const[err,setErr]=useState({});
-  function updMany(patches){const n={...d,...patches};setD(n);onChange(n);}
-  function upd(k,v){updMany({[k]:v});if(err[k])setErr(e=>({...e,[k]:''}));}
-  function blur(k){
-    if(k==='whatsapp'&&d.whatsapp&&!validatePhone(d.whatsapp))setErr(e=>({...e,whatsapp:'Enter a valid 10-digit mobile number'}));
-    if(k==='email'&&d.email&&!validateEmail(d.email))setErr(e=>({...e,email:'Enter a valid email address'}));
-  }
-  // chip: matches main survey Opt style but compact, for grids
-  const chip=(sel)=>`border-2 text-xs font-semibold text-center transition-colors cursor-pointer py-2.5 px-1 ${sel?'bg-gray-900 text-white border-gray-900':'bg-white text-gray-700 border-gray-200 hover:border-gray-500'}`;
-  // row btn: full-width, matches main Opt style exactly
-  const rowBtn=(sel)=>`w-full flex items-center gap-3 px-4 py-3.5 border-2 text-sm font-semibold text-left transition-colors ${sel?'bg-gray-900 border-gray-900 text-white':'bg-white border-gray-200 text-gray-800 hover:border-gray-500 hover:bg-gray-50'}`;
+  const[touched,setTouched]=useState({});
+  function upd(k,v){const n={...d,[k]:v};setD(n);onChange(n);}
+  function touch(k){setTouched(t=>({...t,[k]:true}));}
+
+  const waOk=validatePhone(d.whatsapp);
+  const emOk=validateEmail(d.email);
+  const hasContact=(d.whatsapp&&waOk)||(d.email&&emOk);
+  const hasLocality=Boolean(d.locality?.trim());
+
+  const waErr=touched.whatsapp&&d.whatsapp&&!waOk;
+  const emErr=touched.email&&d.email&&!emOk;
+  // Show "need contact" error only if user touched both fields and neither is valid
+  const contactErr=touched.whatsapp&&touched.email&&!hasContact;
+
+  const sel='w-full border-2 border-gray-200 px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900 transition-colors bg-white appearance-none';
+  const field=(label,req,children)=>(
+    <div>
+      <label className={lbl} style={MN}>{label}{req&&<span className="text-red-500 ml-1">*</span>}{!req&&<span className="normal-case font-normal text-gray-400 ml-1">(opt)</span>}</label>
+      {children}
+    </div>
+  );
   return(
     <div className="space-y-3">
       {/* Banner */}
-      <div className="bg-gray-900 text-white px-4 py-4">
-        <p className="font-bold text-sm mb-1" style={FR}>You're on the early list</p>
-        <p className="text-gray-300 text-xs leading-relaxed" style={MN}>A few more details help us reach you at the right time. Everything is optional except your locality and one contact method.</p>
+      <div className="bg-gray-900 text-white px-4 py-3">
+        <p className="font-bold text-sm" style={FR}>You're on the early list</p>
+        <p className="text-gray-300 text-xs leading-relaxed mt-0.5" style={MN}>Locality + WhatsApp or email required. Everything else is optional.</p>
       </div>
 
-      {/* Contact — own grey card */}
-      <div className="bg-gray-50 border border-gray-200 px-4 py-4 space-y-4">
-        <p className={lbl} style={MN}>Contact — WhatsApp or email required <span className="text-red-500">*</span></p>
-        <div>
-          <label className={lbl} style={MN}>Name <span className="normal-case font-normal text-gray-400">(optional)</span></label>
-          <input value={d.name||''} onChange={e=>upd('name',e.target.value)} placeholder="Your name" type="text" style={MN} className={inp}/>
-        </div>
-        <div>
-          <label className={lbl} style={MN}>WhatsApp number <span className="text-red-500">*</span></label>
-          <input value={d.whatsapp||''} onChange={e=>upd('whatsapp',e.target.value)} onBlur={()=>blur('whatsapp')} placeholder="+91 98765 43210" type="tel" style={MN} className={inp+(err.whatsapp?' border-red-400':'')}/>
-          {err.whatsapp&&<p className="text-xs text-red-500 mt-1" style={MN}>{err.whatsapp}</p>}
-        </div>
-        <div>
-          <label className={lbl} style={MN}>Email address <span className="text-red-500">*</span></label>
-          <input value={d.email||''} onChange={e=>upd('email',e.target.value)} onBlur={()=>blur('email')} placeholder="you@example.com" type="email" style={MN} className={inp+(err.email?' border-red-400':'')}/>
-          {err.email&&<p className="text-xs text-red-500 mt-1" style={MN}>{err.email}</p>}
-        </div>
-      </div>
-
-      {/* Locality — own grey card */}
+      {/* 2-column grid form */}
       <div className="bg-gray-50 border border-gray-200 px-4 py-4">
-        <label className={lbl} style={MN}>Area / locality in Bengaluru <span className="text-red-500">*</span></label>
-        <input value={d.locality} onChange={e=>upd('locality',e.target.value)} placeholder="e.g. Indiranagar, HSR Layout, Koramangala" style={MN} className={inp}/>
-        <p className="text-xs text-gray-400 mt-1.5" style={MN}>Helps us check if we can reach your area.</p>
-      </div>
+        <div className="grid grid-cols-2 gap-3">
 
-      {/* Work schedule — own grey card */}
-      <div className="bg-gray-50 border border-gray-200 px-4 py-4">
-        <label className={lbl} style={MN}>Work schedule <span className="normal-case font-normal text-gray-400">(optional)</span></label>
-        <div className="grid grid-cols-2 gap-2 mt-1">
-          {SCHED.map(o=><button key={o} type="button" onClick={()=>upd('schedule',o)} style={MN} className={chip(d.schedule===o)+' text-left px-3 py-3 leading-tight'}>{o}</button>)}
-        </div>
-      </div>
+          {field('Name',false,
+            <input value={d.name||''} onChange={e=>upd('name',e.target.value)} placeholder="Your name" type="text" style={MN} className={inp}/>
+          )}
+          {field('Area in Bengaluru',true,
+            <input value={d.locality} onChange={e=>upd('locality',e.target.value)} onBlur={()=>touch('locality')} placeholder="e.g. HSR, Koramangala" style={MN}
+              className={inp+(touched.locality&&!hasLocality?' border-red-400':'')}/>
+          )}
 
-      {/* Weight — own grey card */}
-      <div className="bg-gray-50 border border-gray-200 px-4 py-4">
-        <label className={lbl} style={MN}>Approximate weight <span className="normal-case font-normal text-gray-400">(optional)</span></label>
-        <div className="grid grid-cols-3 gap-1.5 mt-1 mb-2">
-          {WT.map(o=>(
-            <button key={o} type="button" style={MN} onClick={()=>updMany({weight:o,weightCustom:''})} className={chip(d.weight===o&&!d.weightCustom)}>{o}</button>
-          ))}
-        </div>
-        <input value={d.weightCustom||''} onChange={e=>updMany({weightCustom:e.target.value,weight:''})} placeholder="Or type exact, e.g. 72 kg" style={MN} className={inp}/>
-      </div>
+          {field('WhatsApp',true,
+            <div>
+              <input value={d.whatsapp||''} onChange={e=>upd('whatsapp',e.target.value)} onBlur={()=>touch('whatsapp')} placeholder="+91 98765 43210" type="tel" style={MN}
+                className={inp+(waErr?' border-red-400':'')}/>
+              {waErr&&<p className="text-xs text-red-500 mt-1" style={MN}>Enter a valid 10-digit number (+91 or without)</p>}
+            </div>
+          )}
+          {field('Email',false,
+            <div>
+              <input value={d.email||''} onChange={e=>upd('email',e.target.value)} onBlur={()=>touch('email')} placeholder="you@example.com" type="email" style={MN}
+                className={inp+(emErr?' border-red-400':'')}/>
+              {emErr&&<p className="text-xs text-red-500 mt-1" style={MN}>Enter a valid email address</p>}
+            </div>
+          )}
 
-      {/* Height — own grey card */}
-      <div className="bg-gray-50 border border-gray-200 px-4 py-4">
-        <label className={lbl} style={MN}>Approximate height <span className="normal-case font-normal text-gray-400">(optional)</span></label>
-        <div className="grid grid-cols-3 gap-1.5 mt-1 mb-2">
-          {HT.map(o=>(
-            <button key={o} type="button" style={MN} onClick={()=>updMany({height:o,heightCustom:''})} className={chip(d.height===o&&!d.heightCustom)}>{o}</button>
-          ))}
-        </div>
-        <input value={d.heightCustom||''} onChange={e=>updMany({heightCustom:e.target.value,height:''})} placeholder="Or type exact, e.g. 175 cm" style={MN} className={inp}/>
-      </div>
+          {field('Height',false,
+            <input value={d.height||''} onChange={e=>upd('height',e.target.value)} placeholder="e.g. 5 ft 8 in" type="text" style={MN} className={inp}/>
+          )}
+          {field('Weight',false,
+            <input value={d.weight||''} onChange={e=>upd('weight',e.target.value)} placeholder="e.g. 72 kg" type="text" inputMode="decimal" style={MN} className={inp}/>
+          )}
 
-      {/* Activity — own grey card, full-width row buttons matching main Opt style */}
-      <div className="bg-gray-50 border border-gray-200 px-4 py-4">
-        <label className={lbl} style={MN}>Activity level <span className="normal-case font-normal text-gray-400">(optional)</span></label>
-        <div className="space-y-2 mt-1">
-          {ACTS.map(o=>(
-            <button key={o} type="button" onClick={()=>upd('activity',o)} style={MN} className={rowBtn(d.activity===o)}>
-              <span className={`flex-shrink-0 w-5 h-5 flex items-center justify-center border-2 transition-colors ${d.activity===o?'border-white bg-transparent':'border-gray-900 bg-gray-900'}`}>
-                {d.activity===o&&<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-              </span>
-              <span className="flex-1 leading-snug">{o}</span>
-            </button>
-          ))}
+          {field('Work schedule',false,
+            <div className="relative">
+              <select value={d.schedule||''} onChange={e=>upd('schedule',e.target.value)} style={MN} className={sel}>
+                <option value="">Select…</option>
+                {SCHED.map(o=><option key={o} value={o}>{o}</option>)}
+              </select>
+              <span style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',color:'#888',fontSize:10}}>▼</span>
+            </div>
+          )}
+          {field('Activity level',false,
+            <div className="relative">
+              <select value={d.activity||''} onChange={e=>upd('activity',e.target.value)} style={MN} className={sel}>
+                <option value="">Select…</option>
+                {ACTS.map(o=><option key={o} value={o}>{o}</option>)}
+              </select>
+              <span style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',color:'#888',fontSize:10}}>▼</span>
+            </div>
+          )}
+
         </div>
+        {contactErr&&<p className="text-xs text-red-500 mt-3" style={MN}>Please enter a valid WhatsApp number or email address so we can reach you.</p>}
+        <p className="text-xs text-gray-400 mt-3" style={MN}>WhatsApp or email required so we can reach you. We never share your details.</p>
       </div>
     </div>
   );
 }
-
 // ─── DisclaimerBlock ──────────────────────────────────────────────────────────
 function DisclaimerBlock({onAck,acked}){
-  const[scrolled,setScrolled]=useState(false);
   return(
     <div>
-      <div onScroll={e=>{const el=e.currentTarget;if(el.scrollHeight-el.scrollTop-el.clientHeight<20)setScrolled(true);}}
-        className="border-2 border-gray-200 p-5 max-h-56 overflow-y-auto text-sm text-gray-600 leading-relaxed space-y-3 mb-4" style={MN}>
-        <p className="font-bold text-gray-900">Bangalore Pilot Programme — Participant Disclaimer</p>
-        <p>By expressing interest in the e8n8 Bangalore pilot, you acknowledge the following:</p>
-        <p><strong>1. Nature of the pilot.</strong> Early-stage pilot. Menus, portions, prices and delivery areas may change without notice.</p>
-        <p><strong>2. Data use.</strong> Information will be used solely for pilot planning and will not be shared with third parties.</p>
-        <p><strong>3. No guarantee of participation.</strong> Interest does not guarantee a place. We will reach out separately based on area and availability.</p>
-        <p><strong>4. Health disclaimer.</strong> e8n8 is a food delivery convenience service and does not provide medical or dietary advice.</p>
-        <p><strong>5. Contact.</strong> By providing contact details you agree to receive pilot-related communications. Opt out by replying STOP.</p>
-        <p className="text-gray-400 text-xs">Last updated {new Date().getFullYear()}</p>
+      <div className="border-2 border-gray-200 p-4 mb-3" style={{background:'#fafafa'}}>
+        <p className="font-bold text-gray-900 text-sm mb-3" style={MN}>Before you finish — a few things</p>
+        <div className="space-y-2.5">
+          {[
+            'This is an early-stage pilot. Details may change.',
+            'Your data is used only for pilot planning — never shared.',
+            'Expressing interest does not guarantee a spot.',
+            'e8n8 is not a medical or dietary service.',
+            'We will reach out personally — no bulk messages.',
+          ].map((pt,i)=>(
+            <div key={i} className="flex items-start gap-2.5">
+              <span style={{...MN,fontSize:11,fontWeight:800,color:'#bbb',flexShrink:0,marginTop:1}}>{i+1}.</span>
+              <p style={{...MN,fontSize:12,color:'#555',lineHeight:1.6,margin:0}}>{pt}</p>
+            </div>
+          ))}
+        </div>
       </div>
-      {!scrolled&&<p className="text-center text-xs text-gray-400 mb-4 animate-pulse" style={MN}>↓ Scroll to read in full</p>}
-      {scrolled&&!acked&&<button type="button" onClick={onAck} style={MN} className="w-full py-4 border-2 border-gray-300 bg-white text-sm font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-500 transition-colors">I acknowledge and agree</button>}
+      {!acked&&<button type="button" onClick={onAck} style={MN}
+        className="w-full py-4 border-2 border-gray-900 bg-gray-900 text-white text-sm font-bold hover:bg-black transition-colors">
+        I understand and agree
+      </button>}
       {acked&&<div className="py-3 bg-gray-50 text-center text-sm font-bold text-gray-600 border-2 border-gray-200" style={MN}>✓ Acknowledged</div>}
     </div>
   );
@@ -465,6 +621,18 @@ function ThankyouGeneral(){
         <p style={{...MN,fontSize:12,color:'#bbb',lineHeight:1.6}}>
           You can close this tab. Thank you again.
         </p>
+
+        {/* Share nudge */}
+        <div className="mt-6 border-2 border-gray-200 p-4" style={{background:'#fafafa'}}>
+          <p style={{...MN,fontSize:11,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#aaa',marginBottom:10}}>Know someone who'd find this useful?</p>
+          <p style={{...MN,fontSize:13,color:'#555',marginBottom:12,lineHeight:1.6}}>If you know someone into fitness or trying to eat better, sharing this takes 5 seconds.</p>
+          <a href={`https://wa.me/?text=${encodeURIComponent("Hey! Took this quick survey on food and fitness habits — honest, no selling involved. Takes 3–5 mins: https://e8n8-survey.vercel.app")}`}
+            target="_blank" rel="noopener noreferrer" style={MN}
+            className="w-full flex items-center justify-center gap-2 py-3 bg-gray-900 text-white text-sm font-bold hover:bg-black transition-colors">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.533 5.86L0 24l6.335-1.658A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.651-.52-5.166-1.427l-.371-.22-3.844 1.006 1.03-3.747-.241-.386A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+            Share on WhatsApp
+          </a>
+        </div>
       </div>
     </div>
   );
@@ -477,34 +645,54 @@ function ThankyouBengaluru(){
         <p style={{fontSize:10,fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'#aaa',...MN,marginBottom:16}}>Bangalore Pilot · Early List</p>
 
         <h1 style={{...FR,fontSize:'clamp(1.4rem,5vw,1.9rem)',fontWeight:700,color:'#111',lineHeight:1.3,marginBottom:14}}>
-          You're on the early list. Thank you.
+          You're on the early list.
         </h1>
 
         <p style={{...MN,fontSize:14,color:'#555',lineHeight:1.75,marginBottom:24}}>
-          We genuinely appreciate you taking the time. When the Bangalore pilot is ready, we'll reach out personally — not through a bulk campaign.
+          We genuinely appreciate you taking the time. When the Bangalore pilot is ready, we'll reach out personally — not through a bulk message.
         </p>
 
-        <div className="border-2 border-gray-200 p-4 mb-6" style={{background:'#fafafa'}}>
+        {/* What to expect */}
+        <div className="border-2 border-gray-200 p-4 mb-5" style={{background:'#fafafa'}}>
           <p style={{...MN,fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#aaa',marginBottom:14}}>What to expect</p>
           <div className="flex items-start gap-3 mb-4">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.36 12 19.79 19.79 0 0 1 1.21 3.5 2 2 0 0 1 3.18 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16z"/></svg>
             <div>
-              <p style={{...MN,fontSize:13,fontWeight:700,color:'#222',margin:0}}>A personal message on WhatsApp or email</p>
-              <p style={{...MN,fontSize:12,color:'#888',margin:0}}>Only when we have something concrete to share — no spam.</p>
+              <p style={{...MN,fontSize:13,fontWeight:700,color:'#222',margin:0}}>A personal message — no bulk campaign</p>
+              <p style={{...MN,fontSize:12,color:'#888',margin:0}}>Only when we have something concrete to share.</p>
             </div>
           </div>
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-3 mb-4">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <div>
               <p style={{...MN,fontSize:13,fontWeight:700,color:'#222',margin:0}}>Small group, not a public launch</p>
               <p style={{...MN,fontSize:12,color:'#888',margin:0}}>Your details stay with us and are never sold or shared.</p>
             </div>
           </div>
+          <div className="flex items-start gap-3">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><rect x="3" y="11" width="18" height="11"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <div>
+              <p style={{...MN,fontSize:13,fontWeight:700,color:'#222',margin:0}}>This is an early-stage pilot</p>
+              <p style={{...MN,fontSize:12,color:'#888',margin:0}}>Details may change. Expressing interest does not guarantee a spot.</p>
+            </div>
+          </div>
         </div>
 
-        <p style={{...MN,fontSize:12,color:'#bbb',lineHeight:1.6}}>
+        <p style={{...MN,fontSize:12,color:'#bbb',lineHeight:1.6,marginBottom:20}}>
           You can close this tab. We'll be in touch.
         </p>
+
+        {/* Share nudge */}
+        <div className="border-2 border-gray-200 p-4" style={{background:'#fafafa'}}>
+          <p style={{...MN,fontSize:11,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#aaa',marginBottom:10}}>Know someone in Bangalore who'd want in?</p>
+          <p style={{...MN,fontSize:13,color:'#555',marginBottom:12,lineHeight:1.6}}>Share this with anyone who takes fitness and food seriously.</p>
+          <a href={`https://wa.me/?text=${encodeURIComponent("Hey! Took this quick survey on food and fitness habits — honest, no selling involved. Takes 3–5 mins: https://e8n8-survey.vercel.app")}`}
+            target="_blank" rel="noopener noreferrer" style={MN}
+            className="w-full flex items-center justify-center gap-2 py-3 bg-gray-900 text-white text-sm font-bold hover:bg-black transition-colors">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.533 5.86L0 24l6.335-1.658A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.651-.52-5.166-1.427l-.371-.22-3.844 1.006 1.03-3.747-.241-.386A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+            Share on WhatsApp
+          </a>
+        </div>
       </div>
     </div>
   );
@@ -593,20 +781,28 @@ export default function SurveyPage(){
   const sec=step?.sec??0;
   const secInfo=SEC[sec];
   const qi=step?.qi||0;
-  const showMeta=qi>0&&sec<5&&!['contact','pilot','disc','done'].includes(step?.type);
+  // Global question number — count position in history across all survey steps (not pilot/contact)
+  const surveyStepIds=STEPS.filter(s=>s.sec<5&&!['contact','done'].includes(s.id)).map(s=>s.id);
+  const globalQNum=surveyStepIds.indexOf(currentId)+1;
+  const globalQTotal=surveyStepIds.length;
+  const showMeta=sec<5&&globalQNum>0&&!['contact','pilot','disc','done'].includes(step?.type);
 
-  const dotsAnswered=history.filter(id=>SM[id]?.qi>0&&SM[id]?.sec<5).length;
-  const pct=isSubmitted?100:Math.min(99,Math.round((dotsAnswered/TOTAL_MAIN)*100));
+  const dotsAnswered=history.filter(id=>SM[id]?.sec<5&&!['contact'].includes(id)).length;
+  const inPilot=sec>=5;
+  const pct=isSubmitted?100:inPilot?100:Math.min(99,Math.round((dotsAnswered/globalQTotal)*100));
 
-  // ALL navigation is via footer buttons only — no card-body buttons
-  const needsBtn=false;
-  // contact only appears for non-Bengaluru users now — always Finish
-  const rightIsFinish=['pilot','disc','done','contact'].includes(step?.type);
-  const rightIsNext=step?.type==='multi';
-  const rightLabel=rightIsFinish?'Finish':rightIsNext?'Next':'Skip';
+  const rightIsFinish=['pilot','done','contact'].includes(step?.type);
+  const otherIsSelected=step?.type==='single-other'&&OTHER_OPTS.includes(answers[currentId]);
+  const rightIsNext=step?.type==='multi'||step?.type==='multi-other'||otherIsSelected;
+  // Required questions: Next only when answered, no Skip ever
+  // Optional questions: Skip → on page open, Next when something answered
+  const isReq=Boolean(step?.req);
+  const rightLabel=rightIsFinish?'Finish':rightIsNext?'Next':answered?'Next':isReq?'Next':'Skip →';
   const rightActive=rightIsFinish?answered&&!transitioning
     :rightIsNext?answered&&!transitioning
-    :!step?.req&&!transitioning&&(step?.type==='single'||step?.type==='text'||step?.type==='city'||step?.type==='name');
+    :isReq?(answered&&!transitioning) // required: only active when answered
+    :!transitioning; // optional: always active (skip or next)
+  const leftActive=history.length>0&&!transitioning;
 
   const nextAfterThis=resolveNext(currentId,answers);
   const cardBtnLabel=submitting?'Saving…':nextAfterThis==='END'?'Finish':'Next →';
@@ -615,10 +811,26 @@ export default function SurveyPage(){
   function resetFill(){if(fillTick.current)clearInterval(fillTick.current);setFillW(0);}
   useEffect(()=>()=>{if(fillTick.current)clearInterval(fillTick.current);},[]);
 
+  const sessionId=useRef(typeof crypto!=='undefined'?crypto.randomUUID():'sess-'+Date.now());
+
+  // Track drop-off: upsert partial row on every step change
+  async function trackStep(stepId,ans){
+    try{
+      await supabase.from('responses').upsert([{
+        session_id:sessionId.current,
+        last_question_seen:stepId,
+        city:normCity(ans.q4||''),
+        is_bengaluru:isBengaluru(ans.q4||''),
+        submitted_at:null, // null means incomplete
+      }],{onConflict:'session_id',ignoreDuplicates:false});
+    }catch(_){}// silent fail — tracking is best-effort
+  }
+
   const advance=useCallback((ans)=>{
     resetFill();
     const next=resolveNext(currentId,ans);
     if(!next||next==='END'){doSubmit(ans);return;}
+    trackStep(next,ans);
     setHistory(h=>[...h,currentId]);
     setCurrentId(next);
     setTransitioning(false);
@@ -650,32 +862,59 @@ export default function SurveyPage(){
     try{
       const rawCity=a.q4||'';const city=normCity(rawCity);
       const contact=a.contact||{};const pilot=a.pilot||{};
-      const finalName=pilot.name||contact.name||(a.q1==='Prefer not to say'?null:a.q1)||null;
+      const finalName=pilot.name||contact.name||a.q1||null;
       const finalWA=pilot.whatsapp||contact.whatsapp||null;
       const finalEmail=pilot.email||contact.email||null;
-      await supabase.from('responses').insert([{
+      const oo=(key)=>{const v=a[key];return OTHER_OPTS.includes(v)?(a[key+'_other']||v):v||null;};
+      const arr=(key)=>Array.isArray(a[key])?a[key].join(', '):null;
+      const arrOther=(key)=>{
+        if(!Array.isArray(a[key]))return null;
+        return a[key].map(v=>OTHER_OPTS.includes(v)?(a[key+'_other']||v):v).join(', ');
+      };
+      await supabase.from('responses').upsert([{
+        session_id:sessionId.current,
         name:finalName,age:a.q2||null,gender:a.q3||null,city,
-        fitness_journey:a.q5||null,goal:a.q6||null,routine:a.q7||null,
-        diet_approach:a.q9||null,who_cooks:a.q11||null,
-        plan_type:a.q12||null,still_using:a.q13||null,plan_change:a.q14||null,
-        plan_source:a.q15||null,time_effort_part:a.q16||null,tracking_confidence:a.q17||null,
-        healthy_meaning:a.q20||null,progress_doubt:a.q21||null,structure_barrier:a.q22||null,
-        starting_soon:a.q23||null,start_barrier:a.q24||null,help_preference:a.q25||null,
-        old_approach_type:a.q26||null,stop_reason:a.q27||null,restart_condition:a.q28||null,
-        food_priorities:Array.isArray(a.q31)?a.q31.join(', '):null,
-        help_type:a.q32||null,delegate_task:a.q33||null,
+        dietary_restrictions:arr('q4b'),
+        goal:arr('q6'),routine:a.q7||null,
+        nutrition_literacy:a.qnl||null,
+        cooking_comfort:a.qck||null,
+        diet_approach:a.q9||null,
+        // Branch A
+        plan_type:oo('q12'),still_using:a.q13||null,plan_change:arr('q14'),
+        plan_longterm:a.qa5||null,
+        // Branch B
+        plan_source:oo('q15'),time_effort_part:arr('q16'),tracking_confidence:a.q17||null,
+        plan_duration:a.qb5||null,
+        // Branch C
+        healthy_meaning:a.q20||null,progress_doubt:a.q21||null,structure_barrier:arr('q22'),
+        diet_trigger:a.qc5||null,
+        // Branch D
+        starting_soon:a.q23||null,start_barrier:arr('q24'),help_preference:a.q25||null,
+        start_trigger:a.qd5||null,
+        // Branch E
+        old_approach_type:a.q26||null,stop_reason:arrOther('q27'),restart_condition:arr('q28'),
+        restart_intent:a.qe6||null,
+        // Section 3
+        food_priorities:arr('q31'),help_type:a.q32||null,delegate_task:arr('q33'),
         willingness_to_pay:a.q34||null,
-        food_discovery:a.q35a||null,
-        order_frequency:a.q35b||null,
-        open_feedback:a.q36||null,
+        taste_preference:arr('qtp'),
+        healthy_delivery_tried:a.qhd||null,
+        food_discovery:arr('q35a'),
+        // Section 4
+        meal_timing:a.q36a||null,
+        order_platforms:arr('q36b'),
+        household_size:a.q36c||null,
+        meal_timing_preference:arr('q36e'),
+        current_food_spend:a.q36f||null,
+        biggest_pain:a.q36d||null,
+        // Contact & pilot
         contact_instagram:contact.instagram||null,contact_whatsapp:finalWA,contact_email:finalEmail,
         pilot_interest:a.q38||null,pilot_locality:pilot.locality||null,
-        pilot_weight:pilot.weightCustom||pilot.weight||null,
-        pilot_height:pilot.heightCustom||pilot.height||null,
+        pilot_weight:pilot.weight||null,pilot_height:pilot.height||null,
         pilot_activity:pilot.activity||null,pilot_work_schedule:pilot.schedule||null,
         is_bengaluru:isBengaluru(rawCity),disclaimer_ack:Boolean(a.disclaimerAck),
-        submitted_at:new Date().toISOString(),
-      }]);
+        last_question_seen:'completed',submitted_at:new Date().toISOString(),
+      }],{onConflict:'session_id'});
       setIsSubmitted(true);
     }catch(e){setSubmitErr('Something went wrong. Please try again.');setTransitioning(false);}
     finally{setSubmitting(false);}
@@ -718,20 +957,39 @@ export default function SurveyPage(){
                   <div className="mb-5">
                     {/* Section pill left · circle progress right — same row */}
                     <div className="flex items-center justify-between mb-3">
-                      <div className="inline-flex items-center gap-1.5 border border-gray-300 bg-gray-50 px-2.5 py-1">
-                        <span className="w-1.5 h-1.5 bg-gray-400 flex-shrink-0"/>
-                        <span style={{fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#888',...MN}}>
-                          {sec<5?`${secInfo?.n} · ${sec+1} of 5`:'Bangalore Pilot'}
-                        </span>
-                      </div>
-                      <CircleProgress pct={pct}/>
+                      {sec<5?(()=>{
+                        const PILLS=[
+                          {bg:'#fff7ed',border:'#fed7aa',dot:'#ea580c',text:'#9a3412'}, // About You — orange
+                          {bg:'#fdf4ff',border:'#e9d5ff',dot:'#a855f7',text:'#7e22ce'}, // Goal & Tracking — purple
+                          {bg:'#fff1f2',border:'#fecdd3',dot:'#e11d48',text:'#9f1239'}, // Your Approach — rose
+                          {bg:'#fefce8',border:'#fde68a',dot:'#ca8a04',text:'#713f12'}, // What Matters — amber
+                          {bg:'#fdf2f8',border:'#f0abfc',dot:'#c026d3',text:'#86198f'}, // Wrapping Up — fuchsia
+                        ];
+                        const p=PILLS[sec]||PILLS[0];
+                        return(
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1" style={{background:p.bg,border:`1px solid ${p.border}`}}>
+                            <span style={{width:6,height:6,borderRadius:'50%',background:p.dot,flexShrink:0}}/>
+                            <span style={{fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:p.text,...MN}}>
+                              {secInfo?.n} · {sec+1} of 5
+                            </span>
+                          </div>
+                        );
+                      })():(
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1" style={{background:'#fff1f2',border:'1px solid #fecdd3'}}>
+                          <span style={{width:6,height:6,borderRadius:'50%',background:'#e11d48',flexShrink:0}}/>
+                          <span style={{fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#9f1239',...MN}}>
+                            Bangalore Pilot
+                          </span>
+                        </div>
+                      )}
+                      {sec<5&&<CircleProgress pct={pct}/>}
                     </div>
 
                     {/* Q number | vertical divider | title + badge */}
                     <div className="flex items-start">
                       {showMeta&&(
                         <>
-                          <span style={{...MN,fontSize:12,fontWeight:800,color:'#c0c0c0',lineHeight:'1.5rem',flexShrink:0,paddingTop:3,minWidth:36}}>Q{qi}/{secInfo?.q}</span>
+                          <span style={{...MN,fontSize:12,fontWeight:800,color:'#c0c0c0',lineHeight:'1.5rem',flexShrink:0,paddingTop:3,minWidth:36}}>Q{globalQNum}</span>
                           <span style={{width:1,background:'#e0e0e0',alignSelf:'stretch',marginRight:10,flexShrink:0}}/>
                         </>
                       )}
@@ -758,6 +1016,12 @@ export default function SurveyPage(){
                       {step.opts?.map((o,i)=><Opt key={o} label={o} idx={i} selected={answers[currentId]===o} onClick={()=>handleSingle(o)}/>)}
                     </div>
                   )}
+                  {step?.type==='single-other'&&(
+                    <SingleOther step={step} value={answers[currentId]||''} otherValue={answers[currentId+'_other']||''}
+                      onChange={val=>setAnswers(a=>({...a,[currentId]:val}))}
+                      onOtherChange={val=>setAnswers(a=>({...a,[currentId+'_other']:val}))}
+                      onAdvance={()=>{setTransitioning(true);advance(answers);}}/>
+                  )}
                   {step?.type==='multi'&&(
                     <div className="space-y-2">
                       {step.opts?.map((o,i)=>{
@@ -772,30 +1036,45 @@ export default function SurveyPage(){
                       })}
                     </div>
                   )}
+                  {step?.type==='multi-other'&&(
+                    <MultiOther step={step} value={answers[currentId]||[]} otherValue={answers[currentId+'_other']||''}
+                      onChange={val=>{setAnswers(a=>({...a,[currentId]:val}));val.length>0?startFill():resetFill();}}
+                      onOtherChange={val=>setAnswers(a=>({...a,[currentId+'_other']:val}))}/>
+                  )}
                   {step?.type==='text'&&(step.long
-                    ?<textarea value={answers[currentId]||''} rows={4} style={MN} onChange={e=>{setAnswers(a=>({...a,[currentId]:e.target.value}));e.target.value.trim()?startFill():resetFill();}} placeholder="Totally optional — write anything or skip" className={inp+' resize-none'}/>
-                    :<input type="text" value={answers[currentId]||''} style={MN} onChange={e=>{setAnswers(a=>({...a,[currentId]:e.target.value}));e.target.value.trim()?startFill():resetFill();}} onKeyDown={e=>{if(e.key==='Enter'&&!transitioning)goNext(true);}} placeholder="Type your answer" className={inp}/>
+                    ?<div>
+                      <textarea value={answers[currentId]||''} rows={4} style={MN}
+                        onChange={e=>{setAnswers(a=>({...a,[currentId]:e.target.value}));e.target.value.trim()?startFill():resetFill();}}
+                        onFocus={e=>setTimeout(()=>e.target.scrollIntoView({behavior:'smooth',block:'nearest'}),300)}
+                        placeholder={step.req?"Write your answer here…":"Totally optional — write anything or skip"}
+                        className={inp+' resize-none'}/>
+                      {step.req&&<p style={{...MN,fontSize:11,color:'#bbb',textAlign:'right',marginTop:4}}>{(answers[currentId]||'').length} chars</p>}
+                    </div>
+                    :<input type="text" value={answers[currentId]||''} style={MN}
+                        onChange={e=>{setAnswers(a=>({...a,[currentId]:e.target.value}));e.target.value.trim()?startFill():resetFill();}}
+                        onKeyDown={e=>{if(e.key==='Enter'&&!transitioning)goNext(true);}}
+                        onFocus={e=>setTimeout(()=>e.target.scrollIntoView({behavior:'smooth',block:'nearest'}),300)}
+                        placeholder="Type your answer" className={inp}/>
                   )}
                   {step?.type==='city'&&<CityInput value={answers.q4||''} onChange={val=>{setAnswers(a=>({...a,q4:val}));}} onSelect={(city)=>{const upd={...answers,q4:city};setAnswers(upd);if(!transitioning){setTransitioning(true);advance(upd);}}}/>}
                   {step?.type==='contact'&&<ContactFields value={answers.contact} onChange={val=>setAnswers(a=>({...a,contact:val}))} prefillName={answers.q1==='Prefer not to say'?'':answers.q1||''}/>}
                   {step?.type==='pilot'&&<PilotFields value={answers.pilot} onChange={val=>setAnswers(a=>({...a,pilot:val}))} contact={{name:answers.q1==='Prefer not to say'?'':answers.q1||'',...(answers.contact||{})}}/>}
-                  {step?.type==='disc'&&<DisclaimerBlock acked={Boolean(answers.disclaimerAck)} onAck={()=>setAnswers(a=>({...a,disclaimerAck:true}))}/>}
                   {step?.type==='done'&&<ThankyouGeneral/>}
                 </div>
 
                 {submitErr&&<p className="text-xs text-red-500 text-center mb-3" style={MN}>{submitErr}</p>}
               </div>
 
-              {/* Footer nav — two equal buttons, divider between */}
+              {/* Footer nav */}
               <div className="border-t-2 border-gray-200 flex flex-shrink-0" style={{minHeight:52}}>
                 <div className="flex-1 border-r-2 border-gray-200">
-                  {history.length===0
-                    ?<NavBtn label="Next" onClick={()=>goNext()} active={answered&&!transitioning} side="right"/>
-                    :<NavBtn label="Back" onClick={goBack} active={!transitioning} side="left"/>
+                  {history.length>0
+                    ?<NavBtn label="Back" onClick={goBack} active={leftActive} side="left"/>
+                    :<NavBtn label="Back" onClick={()=>setStarted(false)} active={!transitioning} side="left"/>
                   }
                 </div>
                 <div className="flex-1">
-                  <NavBtn label={rightLabel} onClick={rightIsFinish||rightIsNext?()=>goNext():()=>goNext(true)} active={rightActive} side="right"/>
+                  <NavBtn label={rightLabel} onClick={rightIsFinish||rightIsNext?()=>goNext():answered?()=>goNext():()=>goNext(true)} active={rightActive} side="right"/>
                 </div>
               </div>
             </>
