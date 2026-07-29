@@ -69,12 +69,13 @@ const STEPS=[
   // ── Section 2 — Your Approach ─────────────────────────────────────────────
   {id:'q9', sec:2,qi:1,type:'single',req:true,
    title:'What are you currently doing about your diet?',
-   opts:['Following a structured paid plan','Trying on my own with a structured plan','Trying on my own without any structure','Not doing anything specific',"I used to, but I've stopped"],next:'q11'},
+   opts:['Following a structured paid plan','Trying on my own with a structured plan','Trying on my own without any structure','Not doing anything specific',"I used to, but I've stopped"],
+   branch:(a)=>a.q9==='Following a structured paid plan'?'q12':'q11'},
 
   {id:'q11',sec:2,qi:2,type:'single',req:true,
    title:'Who usually handles your food day to day?',
    opts:['I cook for myself','Family cooks','We have a cook','My meal plan provides it','I order in most days','A mix of these'],
-   branch:(a)=>({'Following a structured paid plan':'q12','Trying on my own with a structured plan':'q15',
+   branch:(a)=>({'Trying on my own with a structured plan':'q15',
      'Trying on my own without any structure':'q20','Not doing anything specific':'q23',
      "I used to, but I've stopped":'q26'}[a.q9])},
 
