@@ -30,7 +30,7 @@ const ALL_CITIES=[
 ];
 
 // Section definitions — qi counts only required questions per section
-const SEC=[{n:'About You',q:5},{n:'Goal & Tracking',q:3},{n:'Your Approach',q:4},{n:'What Matters',q:6},{n:'Wrapping Up',q:1}];
+const SEC=[{n:'About You',q:4},{n:'Goal & Tracking',q:3},{n:'Your Approach',q:4},{n:'What Matters',q:6},{n:'Wrapping Up',q:1}];
 // Average branch path ≈ 17 steps — use this as denominator so progress hits 100%
 const PROGRESS_DENOM=17;
 
@@ -47,10 +47,7 @@ const STEPS=[
    opts:['Under 25','25–34','35–44','45+','Prefer not to say'],next:'q3'},
   {id:'q3', sec:0,qi:3,type:'single',req:false,title:`What's your gender?`,
    opts:['Male','Female','Non-binary','Prefer not to say'],next:'q4'},
-  {id:'q4', sec:0,qi:4,type:'city',  req:true, title:'Which city or area are you in?',next:'q4b'},
-  {id:'q4b',sec:0,qi:5,type:'single',req:true,
-   title:'Which best describes your diet?',
-   opts:['Vegetarian','Non-vegetarian','Vegan','Jain','No specific restrictions'],next:'q5'},
+  {id:'q4', sec:0,qi:4,type:'city',  req:true, title:'Which city or area are you in?',next:'q5'},
 
   // ── Section 1 — Goal & Tracking (3 required + QNL optional) ──────────────
   {id:'q5', sec:1,qi:1,type:'single',req:true,
@@ -90,7 +87,7 @@ const STEPS=[
   // Part 2 Q1: Tracking habits — Branch A only
   {id:'qtrk',sec:2,qi:0,type:'single',req:false,
    title:'How would you describe your current diet and tracking habits?',
-   opts:['I track strictly year-round as a lifestyle','I only track strictly during specific time-bound goals (like a 12-week cut)','I just keep a loose mental tally of my macros'],next:'q31'},
+   opts:['I track calories or macros ','I try to eat healthy, do not track it ',' I do not think about it much'],next:'q31'},
 
   // Branch B — Own structured
   {id:'q15',sec:2,qi:3,type:'single-other',req:true,
@@ -105,7 +102,7 @@ const STEPS=[
   // Part 2 Q1: Tracking habits — Branch B
   {id:'qtrk_b',sec:2,qi:0,type:'single',req:false,
    title:'How would you describe your current diet and tracking habits?',
-   opts:['I track strictly year-round as a lifestyle','I only track strictly during specific time-bound goals (like a 12-week cut)','I just keep a loose mental tally of my macros'],next:'qrep'},
+   opts:['I track calories or macros ','I try to eat healthy, do not track it ',' I do not think about it much'],next:'qrep'},
   // Part 2 Q2: Meal repetition — Branch B only
   {id:'qrep',sec:2,qi:0,type:'single',req:false,
    title:'How often do you end up eating the exact same meals just because it\'s easier to track or prep?',
@@ -119,7 +116,7 @@ const STEPS=[
    title:'What does eating healthy mean to you day to day?',
    opts:['Eating home-cooked food','Cutting out certain foods','Watching portions','General balance with no strict rules','Just eating a little less overall',OTHER_C],next:'q21'},
   {id:'q21',sec:2,qi:4,type:'single',req:true,
-   title:`Do you ever wonder if what you're doing is actually working?`,
+   title:`Do you ever wonder if what you're doing is actually working towards your goals?`,
    opts:['Yes, often','Sometimes','Rarely',"I'm not really tracking anything"],next:'q22'},
   {id:'q22',sec:2,qi:5,type:'multi-other',req:true,hint:'Select all that apply.',
    title:`What's stopped you from being more structured about your diet?`,
@@ -162,7 +159,7 @@ const STEPS=[
    opts:['Taste','Cost','Time and effort to get it','Knowing my calories or macros','Getting the right nutrition for my goal','Variety','Portion size','Something else'],next:'q32'},
   {id:'q32',sec:3,qi:2,type:'single-other',req:true,
    title:'What kind of support with your diet would suit you best?',
-   opts:['Fully handled for me — I just eat it','Guided — with some choices left to me','Occasional reminders or nudges',"I don't think I need support right now",OTHER_C],next:'q33'},
+   opts:['Completely done for me — Just give me the food ready to eat','Done for the most part, with some flexibility to change things up','Just the plan and math — Tell me what to eat and buy, I will cook it myself',"I don't think I need support right now",OTHER_C],next:'q33'},
   {id:'q33',sec:3,qi:3,type:'multi-other',req:false,hint:'Select all that apply.',
    title:'If someone could take over parts of your food routine, what would help most?',
    opts:['Deciding what to eat','Cooking or preparing it','Tracking what I eat','Shopping for groceries','Nothing — I prefer doing it myself','Something else'],next:'q34'},
@@ -939,7 +936,6 @@ export default function SurveyPage(){
         last_question_seen:'completed',
         name:finalName,age:a.q2||null,gender:a.q3||null,city,
         is_bengaluru:isBengaluru(rawCity),
-        dietary_restrictions:a.q4b||null,
         goal:a.q6||null,routine:a.q7||null,nutrition_literacy:a.qnl||null,
         diet_approach:a.q9||null,
         plan_type:oo('q12'),plan_change:arrOther('q14'),
