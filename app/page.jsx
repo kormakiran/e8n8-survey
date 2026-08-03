@@ -768,11 +768,20 @@ function LandingPage({onStart}){
           </div>
 
           {/* Location pin icon */}
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-3 mb-4">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
             <div>
               <p style={{...MN,fontSize:13,fontWeight:700,color:'#222',margin:0}}>Based in Bangalore?</p>
               <p style={{...MN,fontSize:12,color:'#888',margin:0}}>There may be something early and exclusive for you at the end</p>
+            </div>
+          </div>
+
+          {/* Shield icon — privacy */}
+          <div className="flex items-start gap-3">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <div>
+              <p style={{...MN,fontSize:13,fontWeight:700,color:'#222',margin:0}}>Your information is safe</p>
+              <p style={{...MN,fontSize:12,color:'#888',margin:0}}>Any personal information or contact details you share here are completely secure and accessed only by the e8n8 team — used solely to reach out to you when required. Never for spam calls, bulk messages, or sharing with third parties.</p>
             </div>
           </div>
         </div>
