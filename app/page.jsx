@@ -30,7 +30,7 @@ const ALL_CITIES=[
 ];
 
 // Section definitions — qi counts only required questions per section
-const SEC=[{n:'About You',q:4},{n:'Goal & Tracking',q:3},{n:'Your Approach',q:4},{n:'What Matters',q:6},{n:'Wrapping Up',q:1}];
+const SEC=[{n:'About You',q:5},{n:'Goal & Tracking',q:3},{n:'Your Approach',q:4},{n:'What Matters',q:7},{n:'Wrapping Up',q:1}];
 // Average branch path ≈ 17 steps — use this as denominator so progress hits 100%
 const PROGRESS_DENOM=17;
 
@@ -47,7 +47,10 @@ const STEPS=[
    opts:['Under 25','25–34','35–44','45+','Prefer not to say'],next:'q3'},
   {id:'q3', sec:0,qi:3,type:'single',req:false,title:`What's your gender?`,
    opts:['Male','Female','Non-binary','Prefer not to say'],next:'q4'},
-  {id:'q4', sec:0,qi:4,type:'city',  req:true, title:'Which city or area are you in?',next:'q5'},
+  {id:'q4', sec:0,qi:4,type:'city',  req:true, title:'Which city or area are you in?',next:'q4b'},
+  {id:'q4b',sec:0,qi:5,type:'single-other',req:true,
+   title:'Which best describes your diet?',
+   opts:['Vegetarian','Non-vegetarian','Vegan','Something else — tell us what'],next:'q5'},
 
   // ── Section 1 — Goal & Tracking (3 required + QNL optional) ──────────────
   {id:'q5', sec:1,qi:1,type:'single',req:true,
@@ -55,7 +58,7 @@ const STEPS=[
    opts:['Just starting out','Been at it a while','Very consistent and experienced','Not really working out right now'],next:'q6'},
   {id:'q6', sec:1,qi:2,type:'single',req:true,
    title:'What is your fitness goal right now?',
-   opts:['Lose weight or body fat','Gain muscle','Improve stamina or fitness','Stay at my current weight','No specific goal right now'],next:'q7'},
+   opts:['Lose weight or body fat','Gain muscle','Lose Fat & Build Muscle','Improve stamina or fitness','Stay at my current weight','No specific goal right now'],next:'q7'},
   {id:'q7', sec:1,qi:3,type:'single',req:true,
    title:'Which best describes your current routine?',
    opts:['Gym and diet, both together','Only gym — not really watching my diet','Only diet — not really working out','Neither right now'],next:'qnl'},
@@ -87,7 +90,7 @@ const STEPS=[
   // Part 2 Q1: Tracking habits — Branch A only
   {id:'qtrk',sec:2,qi:0,type:'single',req:false,
    title:'How would you describe your current diet and tracking habits?',
-   opts:['I track calories or macros ','I try to eat healthy, do not track it ',' I do not think about it much'],next:'q31'},
+   opts:['I track calories or macros','I try to eat healthy, do not track it','I do not think about it much'],next:'q31'},
 
   // Branch B — Own structured
   {id:'q15',sec:2,qi:3,type:'single-other',req:true,
@@ -102,7 +105,7 @@ const STEPS=[
   // Part 2 Q1: Tracking habits — Branch B
   {id:'qtrk_b',sec:2,qi:0,type:'single',req:false,
    title:'How would you describe your current diet and tracking habits?',
-   opts:['I track calories or macros ','I try to eat healthy, do not track it ',' I do not think about it much'],next:'qrep'},
+   opts:['I track calories or macros','I try to eat healthy, do not track it','I do not think about it much'],next:'qrep'},
   // Part 2 Q2: Meal repetition — Branch B only
   {id:'qrep',sec:2,qi:0,type:'single',req:false,
    title:'How often do you end up eating the exact same meals just because it\'s easier to track or prep?',
@@ -176,7 +179,11 @@ const STEPS=[
   // Part 2 Q3: Flexibility / dealbreaker — universal, all paths converge here
   {id:'qdeal',sec:3,qi:6,type:'single',req:false,
    title:'If you have ever avoided or canceled a healthy meal delivery service, what was the primary dealbreaker?',
-   opts:['Too rigid — I need flexibility for eating out, weekends, or travel','Menu got boring fast','Macro mismatch — didn\'t fit my exact calorie or protein needs','Too expensive to sustain long-term','N/A — I\'ve never considered a meal delivery service'],next:'q36d'},
+   opts:['Too rigid — I need flexibility for eating out, weekends, or travel','Menu got boring fast','Macro mismatch — didn\'t fit my exact calorie or protein needs','Too expensive to sustain long-term','N/A — I\'ve never considered a meal delivery service'],next:'qtp'},
+  // Taste profile — multi select
+  {id:'qtp',sec:3,qi:7,type:'multi',req:false,hint:'Select all that apply.',
+   title:'What kind of food do you usually enjoy eating?',
+   opts:['Home-style / home-cooked food','North Indian','South Indian','International / continental','Spicy food','Grilled or roasted','Light and simple — nothing too heavy','High protein focused (eggs, chicken, paneer)','Street food style','No strong preference'],next:'q36d'},
 
   // ── Section 4 — Wrapping Up (1 question) ─────────────────────────────────
   {id:'q36d',sec:4,qi:1,type:'text',req:false,long:true,
@@ -874,10 +881,9 @@ export default function SurveyPage(){
 
   const sessionId=useRef(null);
   const sourceRef=useRef(null);
+  const startedAt=useRef(null);
   useEffect(()=>{
-    // Generate fresh session ID on every page load
     sessionId.current=typeof crypto!=='undefined'?crypto.randomUUID():'sess-'+Date.now();
-    // Capture ?src= URL param for channel tracking
     const params=new URLSearchParams(window.location.search);
     const src=params.get('src');
     if(src)sourceRef.current=src;
@@ -936,6 +942,7 @@ export default function SurveyPage(){
         last_question_seen:'completed',
         name:finalName,age:a.q2||null,gender:a.q3||null,city,
         is_bengaluru:isBengaluru(rawCity),
+        dietary_restrictions:oo('q4b'),
         goal:a.q6||null,routine:a.q7||null,nutrition_literacy:a.qnl||null,
         diet_approach:a.q9||null,
         plan_type:oo('q12'),plan_change:arrOther('q14'),
@@ -953,6 +960,7 @@ export default function SurveyPage(){
         delegate_task:arrOther('q33'),willingness_to_pay:a.q34||null,
         healthy_delivery_tried:a.qhd||null,food_discovery:arrOther('q35a'),
         dealbreaker:a.qdeal||null,
+        taste_preference:arr('qtp'),
         biggest_pain:a.q36d||null,
         contact_instagram:contact.instagram||null,
         contact_whatsapp:finalWA,contact_email:finalEmail,
@@ -960,7 +968,9 @@ export default function SurveyPage(){
         pilot_weight:pilot.weight||null,pilot_height:pilot.height||null,
         pilot_activity:pilot.activity||null,pilot_work_schedule:pilot.schedule||null,
         disclaimer_ack:false,
+        started_at:startedAt.current||null,
         submitted_at:new Date().toISOString(),
+        time_to_complete_seconds:startedAt.current?Math.round((Date.now()-new Date(startedAt.current).getTime())/1000):null,
       }]);
       if(error){
         console.error('Supabase insert error:',JSON.stringify(error));
@@ -1001,7 +1011,7 @@ export default function SurveyPage(){
           style={{height:'calc(100vh - 110px)',maxHeight:700,minHeight:460}}>
 
           {/* Landing page — before questions start */}
-          {!started&&<LandingPage onStart={()=>setStarted(true)}/>}
+          {!started&&<LandingPage onStart={()=>{startedAt.current=new Date().toISOString();setStarted(true);}}/>}
 
           {/* Survey */}
           {started&&(
