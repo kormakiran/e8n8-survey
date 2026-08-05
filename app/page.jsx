@@ -212,8 +212,8 @@ function resolveNext(id,a){
   return s.next||'END';
 }
 const OTHER_OPTS=OTHER_OPTS_LIST;
-function isAnswered(id,a){
-  const s=SM[id];if(!s||!s.req)return true;
+function hasEnteredValue(id,a){
+  const s=SM[id];if(!s)return false;
   const v=a[id];
   if(s.type==='multi'||s.type==='multi-other')return Array.isArray(v)&&v.length>0;
   if(s.type==='single-other'){
@@ -234,14 +234,18 @@ function isAnswered(id,a){
   if(s.type==='city')return Boolean(v&&String(v).trim());
   return Boolean(v&&String(v).trim());
 }
+function isAnswered(id,a){
+  const s=SM[id];if(!s||!s.req)return true;
+  return hasEnteredValue(id,a);
+}
 
 // ─── Style tokens ─────────────────────────────────────────────────────────────
-const inp='w-full border-2 border-gray-200 px-4 py-3.5 text-sm text-gray-900 outline-none focus:border-gray-900 transition-colors placeholder:text-gray-400 bg-white';
-const lbl='block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5';
+const inp='w-full border-2 border-[#EADFC4] px-4 py-3.5 text-sm text-[#2B2420] outline-none focus:border-[#2B2420] transition-colors placeholder:text-[#B5A78C] bg-[#FFFDF7]';
+const lbl='block text-[10px] font-bold uppercase tracking-widest text-[#B5A78C] mb-1.5';
 const MN={fontFamily:'Manrope,sans-serif'};
 const FR={fontFamily:'Fraunces,Georgia,serif'};
 const section=(children)=>(
-  <div className="bg-gray-50 border border-gray-200 px-4 py-5 space-y-5">{children}</div>
+  <div className="bg-gray-50 border border-[#EADFC4] px-4 py-5 space-y-5">{children}</div>
 );
 
 // ─── Badge ────────────────────────────────────────────────────────────────────
@@ -257,9 +261,9 @@ function Opt({label,idx,selected,onClick}){
   return(
     <button type="button" onClick={onClick} style={MN}
       className={`w-full flex items-center gap-3 px-4 py-3.5 border-2 text-sm font-semibold text-left transition-colors duration-100 active:opacity-80
-        ${selected?'bg-gray-900 border-gray-900 text-white':'bg-white border-gray-200 text-gray-800 hover:border-gray-500 hover:bg-gray-50'}`}>
+        ${selected?'bg-[linear-gradient(135deg,#FF7A00,#FFD200)] border-transparent text-white shadow-[0_4px_14px_rgba(255,122,0,0.28)]':'bg-[#FFFDF7] border-[#EADFC4] text-[#2B2420] hover:bg-[linear-gradient(135deg,#FF7A00,#FFD200)] hover:border-transparent hover:text-white hover:shadow-[0_4px_14px_rgba(255,122,0,0.28)]'}`}>
       <span className={`flex-shrink-0 w-7 h-7 flex items-center justify-center text-[11px] font-bold border-2 transition-colors duration-100
-        ${selected?'border-white text-white bg-transparent':'border-gray-900 bg-gray-900 text-white'}`}>
+        ${selected?'border-white text-white bg-transparent':'border-[#2B2420] bg-[#2B2420] text-white'}`}>
         {ALPHA[idx]}
       </span>
       <span className="flex-1 leading-snug">{label}</span>
@@ -340,8 +344,8 @@ function MultiOther({step,value=[],otherValue,onChange,onOtherChange}){
 function ProgressBar({pct}){
   return(
     <div className="flex-1 flex items-center gap-2.5">
-      <div className="flex-1 overflow-hidden" style={{height:4,background:'#e5e5e5'}}>
-        <div style={{width:`${pct}%`,height:'100%',background:'#111',transition:'width 400ms ease'}}/>
+      <div className="flex-1 overflow-hidden" style={{height:4,background:'#F3E3C3'}}>
+        <div style={{width:`${pct}%`,height:'100%',background:'#FF7A00',transition:'width 400ms ease'}}/>
       </div>
       <span style={{fontSize:11,color:'#999',...MN,minWidth:28,textAlign:'right',flexShrink:0}}>{pct}%</span>
     </div>
@@ -355,13 +359,13 @@ function CircleProgress({pct}){
   return(
     <div style={{position:'relative',width:44,height:44,flexShrink:0}}>
       <svg width="44" height="44" viewBox="0 0 44 44" style={{transform:'rotate(-90deg)'}}>
-        <circle cx="22" cy="22" r={r} fill="none" stroke="#e5e5e5" strokeWidth="3"/>
-        <circle cx="22" cy="22" r={r} fill={done?'#111':'none'} stroke="#111" strokeWidth="3"
+        <circle cx="22" cy="22" r={r} fill="none" stroke="#F3E3C3" strokeWidth="3"/>
+        <circle cx="22" cy="22" r={r} fill={done?'#FF7A00':'none'} stroke="#FF7A00" strokeWidth="3"
           strokeDasharray={`${filled} ${c}`} strokeLinecap="butt"
           style={{transition:'stroke-dasharray 400ms ease'}}/>
       </svg>
       {!done&&<span style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',
-        fontSize:10,fontWeight:800,color:'#111',...MN}}>
+        fontSize:10,fontWeight:800,color:'#2B2420',...MN}}>
         {pct}%
       </span>}
     </div>
@@ -372,7 +376,7 @@ function NavBtn({label,onClick,active,side}){
   return(
     <button type="button" onClick={active?onClick:undefined} style={{...MN,width:'100%',height:'100%'}}
       className={`flex items-center justify-center gap-1.5 px-4 py-3 border-0 text-sm font-bold transition-colors select-none
-        ${active?isNext?'bg-gray-900 text-white hover:bg-black cursor-pointer':'bg-white text-gray-800 hover:bg-gray-50 cursor-pointer':'bg-white text-gray-300 cursor-default'}`}>
+        ${active?isNext?'bg-[linear-gradient(135deg,#FF7A00,#FFD200)] text-white hover:shadow-[0_4px_14px_rgba(255,122,0,0.35)] cursor-pointer':'bg-[#FFFDF7] text-[#2B2420] hover:bg-[#FFF6DC] cursor-pointer':'bg-[#FFFDF7] text-[#D9CBAE] cursor-default'}`}>
       {side==='left'&&<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>}
       {label}
       {side==='right'&&<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>}
@@ -397,12 +401,12 @@ function CityInput({value,onChange,onSelect}){
   return(
     <div>
       <div className="mb-3">
-        <p style={{fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#aaa',...MN,marginBottom:8}}>Popular cities</p>
+        <p style={{fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#B5A78C',...MN,marginBottom:8}}>Popular cities</p>
         <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
           {TOP_CITIES.map(city=>(
             <button key={city} type="button" onClick={()=>pick(city)} style={MN}
               className={`px-3 py-2.5 border-2 text-sm font-semibold text-left transition-colors
-                ${value===city?'bg-gray-900 text-white border-gray-900':'bg-white border-gray-200 text-gray-700 hover:border-gray-500'}`}>
+                ${value===city?'bg-[linear-gradient(135deg,#FF7A00,#FFD200)] text-white border-transparent':'bg-[#FFFDF7] border-[#EADFC4] text-[#2B2420] hover:bg-[linear-gradient(135deg,#FF7A00,#FFD200)] hover:border-transparent hover:text-white'}`}>
               {value===city&&<span className="mr-1.5 opacity-70">✓</span>}{city}
             </button>
           ))}
@@ -414,17 +418,17 @@ function CityInput({value,onChange,onSelect}){
           onFocus={()=>setOpen(true)} onBlur={()=>setTimeout(()=>setOpen(false),160)}
           placeholder="Type your city…" style={MN} className={inp}/>
         {open&&(filtered.length>0||showFreeText)&&(
-          <div className="absolute z-20 w-full bg-white border-2 border-gray-200 shadow-xl overflow-hidden" style={{borderTop:'none'}}>
+          <div className="absolute z-20 w-full bg-[#FFFDF7] border-2 border-[#EADFC4] shadow-xl overflow-hidden" style={{borderTop:'none'}}>
             {filtered.map(city=>(
               <button key={city} type="button" onMouseDown={()=>pick(city)} style={MN}
-                className="w-full px-4 py-3 text-sm font-semibold text-left text-gray-800 hover:bg-gray-50 border-b border-gray-100 last:border-0">
+                className="w-full px-4 py-3 text-sm font-semibold text-left text-[#2B2420] hover:bg-[#FFF6DC] border-b border-[#EADFC4] last:border-0">
                 {city}
               </button>
             ))}
             {showFreeText&&(
               <button type="button" onMouseDown={()=>pick(q)} style={MN}
-                className="w-full px-4 py-3 text-sm font-semibold text-left text-gray-800 hover:bg-gray-50 flex items-center gap-2">
-                <span className="text-gray-400 text-xs">Use</span> {q}
+                className="w-full px-4 py-3 text-sm font-semibold text-left text-[#2B2420] hover:bg-[#FFF6DC] flex items-center gap-2">
+                <span className="text-[#B5A78C] text-xs">Use</span> {q}
               </button>
             )}
           </div>
@@ -449,9 +453,9 @@ function NameInput({value,onChange,onAdvance}){
         else{onChange(PREFER);setTimeout(()=>onAdvance(),300);}
       }} style={MN}
         className={`w-full flex items-center gap-3 px-4 py-3 border-2 text-sm font-semibold text-left transition-colors
-          ${isPrefer?'bg-gray-900 border-gray-900 text-white':'bg-white border-gray-200 text-gray-700 hover:border-gray-500'}`}>
+          ${isPrefer?'bg-[linear-gradient(135deg,#FF7A00,#FFD200)] border-transparent text-white':'bg-[#FFFDF7] border-[#EADFC4] text-[#2B2420] hover:bg-[linear-gradient(135deg,#FF7A00,#FFD200)] hover:border-transparent hover:text-white'}`}>
         <span className={`flex-shrink-0 w-7 h-7 flex items-center justify-center text-[11px] font-bold border-2
-          ${isPrefer?'border-white text-white bg-transparent':'border-gray-900 bg-gray-900 text-white'}`}>—</span>
+          ${isPrefer?'border-white text-white bg-transparent':'border-[#2B2420] bg-[#2B2420] text-white'}`}>—</span>
         Prefer not to say
       </button>
     </div>
@@ -468,7 +472,7 @@ function ContactFields({value={},onChange,prefillName=''}){
     <div className="space-y-4">
       {CFIELDS.map(({k,l,p,t})=>(
         <div key={k}>
-          <label className={lbl} style={MN}>{l} <span className="normal-case font-normal text-gray-400">(optional)</span></label>
+          <label className={lbl} style={MN}>{l} <span className="normal-case font-normal text-[#B5A78C]">(optional)</span></label>
           <input value={d[k]||''} onChange={e=>upd(k,e.target.value)} placeholder={p} type={t} style={MN} className={inp}/>
         </div>
       ))}
@@ -510,23 +514,23 @@ function PilotFields({value={},onChange,contact={}}){
   // Show "need contact" error only if user touched both fields and neither is valid
   const contactErr=touched.whatsapp&&touched.email&&!hasContact;
 
-  const sel='w-full border-2 border-gray-200 px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900 transition-colors bg-white appearance-none';
+  const sel='w-full border-2 border-[#EADFC4] px-3 py-3 text-sm text-[#2B2420] outline-none focus:border-[#2B2420] transition-colors bg-[#FFFDF7] appearance-none';
   const field=(label,req,children)=>(
     <div>
-      <label className={lbl} style={MN}>{label}{req&&<span className="text-red-500 ml-1">*</span>}{!req&&<span className="normal-case font-normal text-gray-400 ml-1">(opt)</span>}</label>
+      <label className={lbl} style={MN}>{label}{req&&<span className="text-red-500 ml-1">*</span>}{!req&&<span className="normal-case font-normal text-[#B5A78C] ml-1">(opt)</span>}</label>
       {children}
     </div>
   );
   return(
     <div className="space-y-3">
       {/* Banner */}
-      <div className="bg-gray-900 text-white px-4 py-3">
+      <div className="bg-[linear-gradient(135deg,#FF7A00,#FFD200)] text-white px-4 py-3">
         <p className="font-bold text-sm" style={FR}>You're on the early list</p>
-        <p className="text-gray-300 text-xs leading-relaxed mt-0.5" style={MN}>Locality + WhatsApp or email required. Everything else is optional.</p>
+        <p className="text-white/85 text-xs leading-relaxed mt-0.5" style={MN}>Locality + WhatsApp or email required. Everything else is optional.</p>
       </div>
 
       {/* 2-column grid form */}
-      <div className="bg-gray-50 border border-gray-200 px-4 py-4">
+      <div className="bg-[#FFF6DC] border border-[#EADFC4] px-4 py-4">
         <div className="grid grid-cols-2 gap-3">
 
           {field('Name',false,
@@ -565,7 +569,7 @@ function PilotFields({value={},onChange,contact={}}){
                 <option value="">Select…</option>
                 {SCHED.map(o=><option key={o} value={o}>{o}</option>)}
               </select>
-              <span style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',color:'#888',fontSize:10}}>▼</span>
+              <span style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',color:'#8A7A63',fontSize:10}}>▼</span>
             </div>
           )}
           {field('Activity level',false,
@@ -574,13 +578,13 @@ function PilotFields({value={},onChange,contact={}}){
                 <option value="">Select…</option>
                 {ACTS.map(o=><option key={o} value={o}>{o}</option>)}
               </select>
-              <span style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',color:'#888',fontSize:10}}>▼</span>
+              <span style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',color:'#8A7A63',fontSize:10}}>▼</span>
             </div>
           )}
 
         </div>
         {contactErr&&<p className="text-xs text-red-500 mt-3" style={MN}>Please enter a valid WhatsApp number or email address so we can reach you.</p>}
-        <p className="text-xs text-gray-400 mt-3" style={MN}>WhatsApp or email required so we can reach you. We never share your details.</p>
+        <p className="text-xs text-[#B5A78C] mt-3" style={MN}>WhatsApp or email required so we can reach you. We never share your details.</p>
       </div>
     </div>
   );
@@ -589,8 +593,8 @@ function PilotFields({value={},onChange,contact={}}){
 function DisclaimerBlock({onAck,acked}){
   return(
     <div>
-      <div className="border-2 border-gray-200 p-4 mb-3" style={{background:'#fafafa'}}>
-        <p className="font-bold text-gray-900 text-sm mb-3" style={MN}>Before you finish — a few things</p>
+      <div className="border-2 border-[#EADFC4] p-4 mb-3" style={{background:'#FFFDF7'}}>
+        <p className="font-bold text-[#2B2420] text-sm mb-3" style={MN}>Before you finish — a few things</p>
         <div className="space-y-2.5">
           {[
             'This is an early-stage pilot. Details may change.',
@@ -600,17 +604,17 @@ function DisclaimerBlock({onAck,acked}){
             'We will reach out personally — no bulk messages.',
           ].map((pt,i)=>(
             <div key={i} className="flex items-start gap-2.5">
-              <span style={{...MN,fontSize:11,fontWeight:800,color:'#bbb',flexShrink:0,marginTop:1}}>{i+1}.</span>
-              <p style={{...MN,fontSize:12,color:'#555',lineHeight:1.6,margin:0}}>{pt}</p>
+              <span style={{...MN,fontSize:11,fontWeight:800,color:'#B5A78C',flexShrink:0,marginTop:1}}>{i+1}.</span>
+              <p style={{...MN,fontSize:12,color:'#5C4F3F',lineHeight:1.6,margin:0}}>{pt}</p>
             </div>
           ))}
         </div>
       </div>
       {!acked&&<button type="button" onClick={onAck} style={MN}
-        className="w-full py-4 border-2 border-gray-900 bg-gray-900 text-white text-sm font-bold hover:bg-black transition-colors">
+        className="w-full py-4 border-2 border-transparent bg-[linear-gradient(135deg,#FF7A00,#FFD200)] text-white text-sm font-bold hover:shadow-[0_4px_14px_rgba(255,122,0,0.35)] transition-colors">
         I understand and agree
       </button>}
-      {acked&&<div className="py-3 bg-gray-50 text-center text-sm font-bold text-gray-600 border-2 border-gray-200" style={MN}>✓ Acknowledged</div>}
+      {acked&&<div className="py-3 bg-[#FFF6DC] text-center text-sm font-bold text-[#5C4F3F] border-2 border-[#EADFC4]" style={MN}>✓ Acknowledged</div>}
     </div>
   );
 }
@@ -620,45 +624,45 @@ function ThankyouGeneral(){
   return(
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto px-5 pt-6 pb-4 sm:px-7">
-        <p style={{fontSize:10,fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'#aaa',...MN,marginBottom:16}}>Food & Fitness · Survey Complete</p>
+        <p style={{fontSize:10,fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'#B5A78C',...MN,marginBottom:16}}>Food & Fitness · Survey Complete</p>
 
-        <h1 style={{...FR,fontSize:'clamp(1.4rem,5vw,1.9rem)',fontWeight:700,color:'#111',lineHeight:1.3,marginBottom:14}}>
+        <h1 style={{...FR,fontSize:'clamp(1.4rem,5vw,1.9rem)',fontWeight:700,color:'#2B2420',lineHeight:1.3,marginBottom:14}}>
           That's everything. We really appreciate it.
         </h1>
 
-        <p style={{...MN,fontSize:14,color:'#555',lineHeight:1.75,marginBottom:24}}>
+        <p style={{...MN,fontSize:14,color:'#5C4F3F',lineHeight:1.75,marginBottom:24}}>
           Taking a few minutes to share honestly means a lot. Your answers go directly into understanding real people — not a spreadsheet that nobody reads.
         </p>
 
-        <div className="border-2 border-gray-200 p-4 mb-6" style={{background:'#fafafa'}}>
-          <p style={{...MN,fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#aaa',marginBottom:14}}>What happens next</p>
+        <div className="border-2 border-[#EADFC4] p-4 mb-6" style={{background:'#FFFDF7'}}>
+          <p style={{...MN,fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#B5A78C',marginBottom:14}}>What happens next</p>
           <div className="flex items-start gap-3 mb-4">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B5A78C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             <div>
-              <p style={{...MN,fontSize:13,fontWeight:700,color:'#222',margin:0}}>Your responses are safe with us</p>
-              <p style={{...MN,fontSize:12,color:'#888',margin:0}}>Seen only by the e8n8 team. Never sold or shared.</p>
+              <p style={{...MN,fontSize:13,fontWeight:700,color:'#2B2420',margin:0}}>Your responses are safe with us</p>
+              <p style={{...MN,fontSize:12,color:'#8A7A63',margin:0}}>Seen only by the e8n8 team. Never sold or shared.</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B5A78C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <div>
-              <p style={{...MN,fontSize:13,fontWeight:700,color:'#222',margin:0}}>No unsolicited messages</p>
-              <p style={{...MN,fontSize:12,color:'#888',margin:0}}>We only reach out if you left your contact details and we have something genuinely relevant to share.</p>
+              <p style={{...MN,fontSize:13,fontWeight:700,color:'#2B2420',margin:0}}>No unsolicited messages</p>
+              <p style={{...MN,fontSize:12,color:'#8A7A63',margin:0}}>We only reach out if you left your contact details and we have something genuinely relevant to share.</p>
             </div>
           </div>
         </div>
 
-        <p style={{...MN,fontSize:12,color:'#bbb',lineHeight:1.6}}>
+        <p style={{...MN,fontSize:12,color:'#B5A78C',lineHeight:1.6}}>
           You can close this tab. Thank you again.
         </p>
 
         {/* Share nudge */}
-        <div className="mt-6 border-2 border-gray-200 p-4" style={{background:'#fafafa'}}>
-          <p style={{...MN,fontSize:11,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#aaa',marginBottom:10}}>Know someone who'd find this useful?</p>
-          <p style={{...MN,fontSize:13,color:'#555',marginBottom:12,lineHeight:1.6}}>If you know someone into fitness or trying to eat better, sharing this takes 5 seconds.</p>
+        <div className="mt-6 border-2 border-[#EADFC4] p-4" style={{background:'#FFFDF7'}}>
+          <p style={{...MN,fontSize:11,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#B5A78C',marginBottom:10}}>Know someone who'd find this useful?</p>
+          <p style={{...MN,fontSize:13,color:'#5C4F3F',marginBottom:12,lineHeight:1.6}}>If you know someone into fitness or trying to eat better, sharing this takes 5 seconds.</p>
           <a href={`https://wa.me/?text=${encodeURIComponent("Hey! take this quick survey on food and fitness habits — honest, no selling involved. Takes 3–5 mins: https://e8n8-survey.vercel.app")}`}
             target="_blank" rel="noopener noreferrer" style={MN}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-gray-900 text-white text-sm font-bold hover:bg-black transition-colors">
+            className="w-full flex items-center justify-center gap-2 py-3 bg-[linear-gradient(135deg,#FF7A00,#FFD200)] text-white text-sm font-bold hover:shadow-[0_4px_14px_rgba(255,122,0,0.35)] transition-colors">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.533 5.86L0 24l6.335-1.658A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.651-.52-5.166-1.427l-.371-.22-3.844 1.006 1.03-3.747-.241-.386A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
             Share on WhatsApp
           </a>
@@ -672,53 +676,53 @@ function ThankyouBengaluru(){
   return(
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto px-5 pt-6 pb-4 sm:px-7">
-        <p style={{fontSize:10,fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'#aaa',...MN,marginBottom:16}}>Bangalore Pilot · Early List</p>
+        <p style={{fontSize:10,fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'#B5A78C',...MN,marginBottom:16}}>Bangalore Pilot · Early List</p>
 
-        <h1 style={{...FR,fontSize:'clamp(1.4rem,5vw,1.9rem)',fontWeight:700,color:'#111',lineHeight:1.3,marginBottom:14}}>
+        <h1 style={{...FR,fontSize:'clamp(1.4rem,5vw,1.9rem)',fontWeight:700,color:'#2B2420',lineHeight:1.3,marginBottom:14}}>
           You're on the early list.
         </h1>
 
-        <p style={{...MN,fontSize:14,color:'#555',lineHeight:1.75,marginBottom:24}}>
+        <p style={{...MN,fontSize:14,color:'#5C4F3F',lineHeight:1.75,marginBottom:24}}>
           We genuinely appreciate you taking the time. When the Bangalore pilot is ready, we'll reach out personally — not through a bulk message.
         </p>
 
         {/* What to expect */}
-        <div className="border-2 border-gray-200 p-4 mb-5" style={{background:'#fafafa'}}>
-          <p style={{...MN,fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#aaa',marginBottom:14}}>What to expect</p>
+        <div className="border-2 border-[#EADFC4] p-4 mb-5" style={{background:'#FFFDF7'}}>
+          <p style={{...MN,fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#B5A78C',marginBottom:14}}>What to expect</p>
           <div className="flex items-start gap-3 mb-4">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.36 12 19.79 19.79 0 0 1 1.21 3.5 2 2 0 0 1 3.18 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16z"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B5A78C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.36 12 19.79 19.79 0 0 1 1.21 3.5 2 2 0 0 1 3.18 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16z"/></svg>
             <div>
-              <p style={{...MN,fontSize:13,fontWeight:700,color:'#222',margin:0}}>A personal message — no bulk campaign</p>
-              <p style={{...MN,fontSize:12,color:'#888',margin:0}}>Only when we have something concrete to share.</p>
+              <p style={{...MN,fontSize:13,fontWeight:700,color:'#2B2420',margin:0}}>A personal message — no bulk campaign</p>
+              <p style={{...MN,fontSize:12,color:'#8A7A63',margin:0}}>Only when we have something concrete to share.</p>
             </div>
           </div>
           <div className="flex items-start gap-3 mb-4">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B5A78C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <div>
-              <p style={{...MN,fontSize:13,fontWeight:700,color:'#222',margin:0}}>Small group, not a public launch</p>
-              <p style={{...MN,fontSize:12,color:'#888',margin:0}}>Your details stay with us and are never sold or shared.</p>
+              <p style={{...MN,fontSize:13,fontWeight:700,color:'#2B2420',margin:0}}>Small group, not a public launch</p>
+              <p style={{...MN,fontSize:12,color:'#8A7A63',margin:0}}>Your details stay with us and are never sold or shared.</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><rect x="3" y="11" width="18" height="11"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B5A78C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><rect x="3" y="11" width="18" height="11"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <div>
-              <p style={{...MN,fontSize:13,fontWeight:700,color:'#222',margin:0}}>This is an early-stage pilot</p>
-              <p style={{...MN,fontSize:12,color:'#888',margin:0}}>Details may change. Expressing interest does not guarantee a spot.</p>
+              <p style={{...MN,fontSize:13,fontWeight:700,color:'#2B2420',margin:0}}>This is an early-stage pilot</p>
+              <p style={{...MN,fontSize:12,color:'#8A7A63',margin:0}}>Details may change. Expressing interest does not guarantee a spot.</p>
             </div>
           </div>
         </div>
 
-        <p style={{...MN,fontSize:12,color:'#bbb',lineHeight:1.6,marginBottom:20}}>
+        <p style={{...MN,fontSize:12,color:'#B5A78C',lineHeight:1.6,marginBottom:20}}>
           You can close this tab. We'll be in touch.
         </p>
 
         {/* Share nudge */}
-        <div className="border-2 border-gray-200 p-4" style={{background:'#fafafa'}}>
-          <p style={{...MN,fontSize:11,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#aaa',marginBottom:10}}>Know someone in Bangalore who'd want in?</p>
-          <p style={{...MN,fontSize:13,color:'#555',marginBottom:12,lineHeight:1.6}}>Share this with anyone who takes fitness and food seriously.</p>
+        <div className="border-2 border-[#EADFC4] p-4" style={{background:'#FFFDF7'}}>
+          <p style={{...MN,fontSize:11,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#B5A78C',marginBottom:10}}>Know someone in Bangalore who'd want in?</p>
+          <p style={{...MN,fontSize:13,color:'#5C4F3F',marginBottom:12,lineHeight:1.6}}>Share this with anyone who takes fitness and food seriously.</p>
           <a href={`https://wa.me/?text=${encodeURIComponent("Hey! take this quick survey on food and fitness habits — honest, no selling involved. Takes 3–5 mins: https://e8n8-survey.vercel.app")}`}
             target="_blank" rel="noopener noreferrer" style={MN}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-gray-900 text-white text-sm font-bold hover:bg-black transition-colors">
+            className="w-full flex items-center justify-center gap-2 py-3 bg-[linear-gradient(135deg,#FF7A00,#FFD200)] text-white text-sm font-bold hover:shadow-[0_4px_14px_rgba(255,122,0,0.35)] transition-colors">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.533 5.86L0 24l6.335-1.658A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.651-.52-5.166-1.427l-.371-.22-3.844 1.006 1.03-3.747-.241-.386A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
             Share on WhatsApp
           </a>
@@ -734,67 +738,67 @@ function LandingPage({onStart}){
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto px-4 pt-5 pb-4 sm:px-6 sm:pt-6">
         {/* Eyebrow */}
-        <p style={{fontSize:10,fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'#aaa',...MN,marginBottom:16}}>Food & Fitness · Quick Survey</p>
+        <p style={{fontSize:10,fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'#B5A78C',...MN,marginBottom:16}}>Food & Fitness · Quick Survey</p>
 
         {/* Headline — vague, no product reveal */}
-        <h1 style={{...FR,fontSize:'clamp(1.4rem,5vw,1.9rem)',fontWeight:700,color:'#111',lineHeight:1.3,marginBottom:14}}>
+        <h1 style={{...FR,fontSize:'clamp(1.4rem,5vw,1.9rem)',fontWeight:700,color:'#2B2420',lineHeight:1.3,marginBottom:14}}>
           A few honest questions about food and fitness.
         </h1>
 
-        <p style={{...MN,fontSize:14,color:'#555',lineHeight:1.75,marginBottom:24}}>
+        <p style={{...MN,fontSize:14,color:'#5C4F3F',lineHeight:1.75,marginBottom:24}}>
           We're doing early research to understand how people approach eating, fitness goals, and diet routines. No selling, no agenda — just listening.
         </p>
 
         {/* What to expect */}
-        <div className="border-2 border-gray-200 p-4 mb-6" style={{background:'#fafafa'}}>
-          <p style={{...MN,fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#aaa',marginBottom:14}}>What to expect</p>
+        <div className="border-2 border-[#EADFC4] p-4 mb-6" style={{background:'#FFFDF7'}}>
+          <p style={{...MN,fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#B5A78C',marginBottom:14}}>What to expect</p>
 
           {/* Clock icon */}
           <div className="flex items-start gap-3 mb-4">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B5A78C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <div>
-              <p style={{...MN,fontSize:13,fontWeight:700,color:'#222',margin:0}}>About 3–5 minutes</p>
-              <p style={{...MN,fontSize:12,color:'#888',margin:0}}>Skip any question you prefer not to answer</p>
+              <p style={{...MN,fontSize:13,fontWeight:700,color:'#2B2420',margin:0}}>About 3–5 minutes</p>
+              <p style={{...MN,fontSize:12,color:'#8A7A63',margin:0}}>Skip any question you prefer not to answer</p>
             </div>
           </div>
 
           {/* Lock icon */}
           <div className="flex items-start gap-3 mb-4">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><rect x="3" y="11" width="18" height="11"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B5A78C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><rect x="3" y="11" width="18" height="11"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <div>
-              <p style={{...MN,fontSize:13,fontWeight:700,color:'#222',margin:0}}>Completely anonymous</p>
-              <p style={{...MN,fontSize:12,color:'#888',margin:0}}>Unless you choose to share contact details at the end</p>
+              <p style={{...MN,fontSize:13,fontWeight:700,color:'#2B2420',margin:0}}>Completely anonymous</p>
+              <p style={{...MN,fontSize:12,color:'#8A7A63',margin:0}}>Unless you choose to share contact details at the end</p>
             </div>
           </div>
 
           {/* Location pin icon */}
           <div className="flex items-start gap-3 mb-4">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B5A78C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
             <div>
-              <p style={{...MN,fontSize:13,fontWeight:700,color:'#222',margin:0}}>Based in Bangalore?</p>
-              <p style={{...MN,fontSize:12,color:'#888',margin:0}}>There may be something early and exclusive for you at the end</p>
+              <p style={{...MN,fontSize:13,fontWeight:700,color:'#2B2420',margin:0}}>Based in Bangalore?</p>
+              <p style={{...MN,fontSize:12,color:'#8A7A63',margin:0}}>There may be something early and exclusive for you at the end</p>
             </div>
           </div>
 
           {/* Shield icon — privacy */}
           <div className="flex items-start gap-3">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B5A78C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             <div>
-              <p style={{...MN,fontSize:13,fontWeight:700,color:'#222',margin:0}}>Your information is safe</p>
-              <p style={{...MN,fontSize:12,color:'#888',margin:0}}>Any personal information or contact details you share here are completely secure and accessed only by the e8n8 team — used solely to reach out to you when required. Never for spam calls, bulk messages, or sharing with third parties.</p>
+              <p style={{...MN,fontSize:13,fontWeight:700,color:'#2B2420',margin:0}}>Your information is safe</p>
+              <p style={{...MN,fontSize:12,color:'#8A7A63',margin:0}}>Any personal information or contact details you share here are completely secure and accessed only by the e8n8 team — used solely to reach out to you when required. Never for spam calls, bulk messages, or sharing with third parties.</p>
             </div>
           </div>
         </div>
 
-        <p style={{...MN,fontSize:12,color:'#bbb',lineHeight:1.6}}>
+        <p style={{...MN,fontSize:12,color:'#B5A78C',lineHeight:1.6}}>
           There are no right answers. The more honest you are, the more useful this is.
         </p>
       </div>
 
       {/* Start button */}
-      <div className="border-t-2 border-gray-200 px-5 py-4 sm:px-7">
+      <div className="border-t-2 border-[#EADFC4] px-5 py-4 sm:px-7">
         <button type="button" onClick={onStart} style={MN}
-          className="w-full py-4 bg-gray-900 text-white border-2 border-gray-900 text-sm font-bold hover:bg-black transition-colors">
+          className="w-full py-4 bg-[linear-gradient(135deg,#FF7A00,#FFD200)] text-white border-2 border-transparent text-sm font-bold hover:shadow-[0_4px_14px_rgba(255,122,0,0.35)] transition-colors">
           Start — takes 3–5 min →
         </button>
       </div>
@@ -871,18 +875,16 @@ export default function SurveyPage(){
   const isQ38No=currentId==='q38'&&answers.q38==='Not right now';
 
   const rightIsFinish=['pilot','done','contact'].includes(step?.type)||isQ38No;
-  const otherIsSelected=step?.type==='single-other'&&OTHER_OPTS.includes(answers[currentId]);
-  const rightIsNext=step?.type==='multi'||step?.type==='multi-other'||otherIsSelected;
   const isReq=Boolean(step?.req);
-  const rightLabel=rightIsFinish?'Finish':rightIsNext?'Next':answered?'Next':isReq?'Next':'Skip →';
+  const filled=hasEnteredValue(currentId,answers);
+  const rightLabel=rightIsFinish?'Finish':filled?'Next':isReq?'Next':'Skip';
   const rightActive=rightIsFinish?(answered&&!transitioning)||isQ38No
-    :rightIsNext?answered&&!transitioning
     :isReq?(answered&&!transitioning)
     :!transitioning;
   const leftActive=history.length>0&&!transitioning;
 
   const nextAfterThis=resolveNext(currentId,answers);
-  const cardBtnLabel=submitting?'Saving…':nextAfterThis==='END'?'Finish':'Next →';
+  const cardBtnLabel=submitting?'Saving…':nextAfterThis==='END'?'Finish':'Next';
 
   function startFill(){if(fillTick.current)clearInterval(fillTick.current);setFillW(20);fillTick.current=setInterval(()=>setFillW(w=>{if(w>=100){clearInterval(fillTick.current);return 100;}return w+3;}),18);}
   function resetFill(){if(fillTick.current)clearInterval(fillTick.current);setFillW(0);}
@@ -999,10 +1001,10 @@ export default function SurveyPage(){
 
   if(isSubmitted){
     return(
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="min-h-screen bg-[#FFF6DC] flex flex-col">
         <SiteHeader/>
         <main className="flex-1 flex flex-col items-center px-3 pt-4 pb-3 sm:px-4 sm:pt-6">
-          <div className="w-full max-w-xl bg-white border-2 border-gray-200 flex flex-col"
+          <div className="w-full max-w-xl bg-[#FFFDF7] border-2 border-[#EADFC4] flex flex-col"
             style={{height:'calc(100vh - 110px)',maxHeight:700,minHeight:460}}>
             {joinedPilot?<ThankyouBengaluru/>:<ThankyouGeneral/>}
           </div>
@@ -1013,10 +1015,10 @@ export default function SurveyPage(){
   }
 
   return(
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-[#FFF6DC] flex flex-col">
       <SiteHeader/>
       <main className="flex-1 flex flex-col items-center px-3 pt-4 pb-3 sm:px-4 sm:pt-6">
-        <div className="w-full max-w-xl bg-white border-2 border-gray-200 flex flex-col"
+        <div className="w-full max-w-xl bg-[#FFFDF7] border-2 border-[#EADFC4] flex flex-col"
           style={{height:'calc(100vh - 110px)',maxHeight:700,minHeight:460}}>
 
           {/* Landing page — before questions start */}
@@ -1034,11 +1036,11 @@ export default function SurveyPage(){
                     <div className="flex items-center justify-between mb-3">
                       {sec<5?(()=>{
                         const PILLS=[
-                          {bg:'#fff7ed',border:'#fed7aa',dot:'#ea580c',text:'#9a3412'}, // About You — orange
-                          {bg:'#fdf4ff',border:'#e9d5ff',dot:'#a855f7',text:'#7e22ce'}, // Goal & Tracking — purple
-                          {bg:'#fff1f2',border:'#fecdd3',dot:'#e11d48',text:'#9f1239'}, // Your Approach — rose
-                          {bg:'#fefce8',border:'#fde68a',dot:'#ca8a04',text:'#713f12'}, // What Matters — amber
-                          {bg:'#fdf2f8',border:'#f0abfc',dot:'#c026d3',text:'#86198f'}, // Wrapping Up — fuchsia
+                          {bg:'#FFF3E0',border:'#FFD199',dot:'#FF7A00',text:'#9A3412'}, // About You — orange
+                          {bg:'#FEF6DC',border:'#F5D584',dot:'#D9930F',text:'#6B4A0C'}, // Goal & Tracking — gold
+                          {bg:'#FBEAE2',border:'#EBBC9E',dot:'#B4502A',text:'#6B2E14'}, // Your Approach — terracotta
+                          {bg:'#FCF1D6',border:'#EFCE80',dot:'#C2831A',text:'#5C3E0A'}, // What Matters — deep amber
+                          {bg:'#FDEBE6',border:'#F0BDA8',dot:'#D9622E',text:'#7A2E12'}, // Wrapping Up — coral
                         ];
                         const p=PILLS[sec]||PILLS[0];
                         return(
@@ -1050,9 +1052,9 @@ export default function SurveyPage(){
                           </div>
                         );
                       })():(
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1" style={{background:'#fff1f2',border:'1px solid #fecdd3'}}>
-                          <span style={{width:6,height:6,borderRadius:'50%',background:'#e11d48',flexShrink:0}}/>
-                          <span style={{fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#9f1239',...MN}}>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1" style={{background:'#FDEBE6',border:'1px solid #F0BDA8'}}>
+                          <span style={{width:6,height:6,borderRadius:'50%',background:'#D9622E',flexShrink:0}}/>
+                          <span style={{fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#7A2E12',...MN}}>
                             Bangalore Pilot
                           </span>
                         </div>
@@ -1069,7 +1071,7 @@ export default function SurveyPage(){
                         </>
                       )}
                       <div className="flex-1 flex items-start justify-between gap-2 min-w-0">
-                        <h2 style={{...FR,fontSize:'clamp(1rem,3.5vw,1.15rem)',fontWeight:600,color:'#111',lineHeight:1.4,margin:0,flex:1}}>
+                        <h2 style={{...FR,fontSize:'clamp(1rem,3.5vw,1.15rem)',fontWeight:600,color:'#2B2420',lineHeight:1.4,margin:0,flex:1}}>
                           {step?.title}
                         </h2>
                         {step?.type!=='disc'&&step?.type!=='done'&&(
@@ -1077,7 +1079,7 @@ export default function SurveyPage(){
                         )}
                       </div>
                     </div>
-                    {step?.hint&&<p className="text-sm text-gray-400 mt-2" style={MN}>{step.hint}</p>}
+                    {step?.hint&&<p className="text-sm text-[#B5A78C] mt-2" style={MN}>{step.hint}</p>}
                   </div>
                 )}
 
@@ -1123,7 +1125,7 @@ export default function SurveyPage(){
                         onFocus={e=>setTimeout(()=>e.target.scrollIntoView({behavior:'smooth',block:'nearest'}),300)}
                         placeholder={step.req?"Write your answer here…":"Totally optional — write anything or skip"}
                         className={inp+' resize-none'}/>
-                      {step.req&&<p style={{...MN,fontSize:11,color:'#bbb',textAlign:'right',marginTop:4}}>{(answers[currentId]||'').length} chars</p>}
+                      {step.req&&<p style={{...MN,fontSize:11,color:'#B5A78C',textAlign:'right',marginTop:4}}>{(answers[currentId]||'').length} chars</p>}
                     </div>
                     :<input type="text" value={answers[currentId]||''} style={MN}
                         onChange={e=>{setAnswers(a=>({...a,[currentId]:e.target.value}));e.target.value.trim()?startFill():resetFill();}}
@@ -1141,19 +1143,15 @@ export default function SurveyPage(){
               </div>
 
               {/* Footer nav */}
-              <div className="border-t-2 border-gray-200 flex flex-shrink-0" style={{minHeight:52}}>
-                <div className="flex-1 border-r-2 border-gray-200">
+              <div className="border-t-2 border-[#EADFC4] flex flex-shrink-0" style={{minHeight:52}}>
+                <div className="flex-1 border-r-2 border-[#EADFC4]">
                   {history.length>0
                     ?<NavBtn label="Back" onClick={goBack} active={leftActive} side="left"/>
                     :<NavBtn label="Back" onClick={()=>setStarted(false)} active={!transitioning} side="left"/>
                   }
                 </div>
                 <div className="flex-1">
-                  <NavBtn label={rightLabel} onClick={()=>{
-                    if(rightIsFinish||rightIsNext){goNext();}
-                    else if(answered){goNext();}
-                    else{goNext(true);}
-                  }} active={rightActive} side="right"/>
+                  <NavBtn label={rightLabel} onClick={()=>goNext()} active={rightActive} side="right"/>
                 </div>
               </div>
             </>
@@ -1168,25 +1166,25 @@ export default function SurveyPage(){
 function AboutContent(){
   return(
     <div className="space-y-5">
-      <p style={{...FR,fontSize:16,fontWeight:700,color:'#111'}}>About This Survey</p>
+      <p style={{...FR,fontSize:16,fontWeight:700,color:'#2B2420'}}>About This Survey</p>
       <p style={{color:'#666',fontSize:12}}>e8n8 Research Initiative</p>
       <div>
-        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>Who we are</p>
+        <p style={{fontWeight:700,color:'#2B2420',marginBottom:6}}>Who we are</p>
         <p>We are a small team doing early-stage research into how people in India approach food, fitness, and everyday diet decisions. We are not a brand, not a service, and not selling anything — yet.</p>
       </div>
       <div>
-        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>Why this survey exists</p>
+        <p style={{fontWeight:700,color:'#2B2420',marginBottom:6}}>Why this survey exists</p>
         <p>Before building anything, we want to understand real behaviour and real frustrations — from real people. This survey is the first step in that process. Your answers shape what we explore next.</p>
       </div>
       <div>
-        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>What we do with your answers</p>
+        <p style={{fontWeight:700,color:'#2B2420',marginBottom:6}}>What we do with your answers</p>
         <p>Responses are used purely for internal research. We look for patterns, not individuals. We do not share, sell, or use your data for advertising of any kind.</p>
       </div>
       <div>
-        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>The Bangalore pilot</p>
+        <p style={{fontWeight:700,color:'#2B2420',marginBottom:6}}>The Bangalore pilot</p>
         <p>We are exploring whether there is a real need for something specific to the Bangalore market. If you are based there and express interest, we may reach out when we have something concrete — personally, not through a bulk campaign.</p>
       </div>
-      <p style={{color:'#bbb',fontSize:11,marginTop:12}}>Questions? Reach us at hello@e8n8.in</p>
+      <p style={{color:'#B5A78C',fontSize:11,marginTop:12}}>Questions? Reach us at hello@e8n8.in</p>
     </div>
   );
 }
@@ -1196,16 +1194,16 @@ function SiteHeader(){
   return(
     <>
       {modal==='about'&&<Modal title="About" onClose={()=>setModal(null)}><AboutContent/></Modal>}
-      <header className="sticky top-0 z-10 bg-white border-b-2 border-gray-200 px-4 py-3">
+      <header className="sticky top-0 z-10 bg-[#FFFDF7] border-b-2 border-[#EADFC4] px-4 py-3">
         <div className="max-w-xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-gray-900 flex items-center justify-center flex-shrink-0">
+            <div className="w-7 h-7 bg-[#FF7A00] flex items-center justify-center flex-shrink-0">
               <span className="text-white text-[10px] font-bold" style={MN}>e8</span>
             </div>
-            <span className="font-bold text-gray-900 text-sm" style={MN}>e8n8</span>
+            <span className="font-bold text-[#2B2420] text-sm" style={MN}>e8n8</span>
           </div>
           <button type="button" onClick={()=>setModal('about')}
-            className="text-xs text-gray-400 hover:text-gray-700 underline" style={MN}>About</button>
+            className="text-xs text-[#B5A78C] hover:text-[#2B2420] underline" style={MN}>About</button>
         </div>
       </header>
     </>
@@ -1220,11 +1218,11 @@ function Modal({title,onClose,children}){
   return(
     <div style={{position:'fixed',inset:0,zIndex:50,background:'rgba(0,0,0,0.55)',display:'flex',alignItems:'flex-end',justifyContent:'center',padding:'0'}}
       onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-      <div style={{width:'100%',maxWidth:560,background:'#fff',border:'2px solid #e5e7eb',maxHeight:'85vh',display:'flex',flexDirection:'column'}}>
+      <div style={{width:'100%',maxWidth:560,background:'#FFFDF7',border:'2px solid #EADFC4',maxHeight:'85vh',display:'flex',flexDirection:'column'}}>
         {/* Modal header */}
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 20px',borderBottom:'2px solid #e5e7eb',flexShrink:0}}>
-          <span style={{...MN,fontSize:11,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#888'}}>{title}</span>
-          <button type="button" onClick={onClose} style={{...MN,background:'none',border:'2px solid #e5e7eb',width:32,height:32,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0,fontSize:16,color:'#555',fontWeight:700}}>✕</button>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 20px',borderBottom:'2px solid #EADFC4',flexShrink:0}}>
+          <span style={{...MN,fontSize:11,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#8A7A63'}}>{title}</span>
+          <button type="button" onClick={onClose} style={{...MN,background:'none',border:'2px solid #EADFC4',width:32,height:32,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0,fontSize:16,color:'#2B2420',fontWeight:700}}>✕</button>
         </div>
         {/* Modal body */}
         <div style={{overflowY:'auto',padding:'20px',flex:1,...MN,fontSize:13,color:'#444',lineHeight:1.75}}>
@@ -1239,40 +1237,40 @@ function Modal({title,onClose,children}){
 function PrivacyContent(){
   return(
     <div className="space-y-5">
-      <p style={{...FR,fontSize:16,fontWeight:700,color:'#111'}}>Privacy Policy</p>
+      <p style={{...FR,fontSize:16,fontWeight:700,color:'#2B2420'}}>Privacy Policy</p>
       <p style={{color:'#666',fontSize:12}}>Last updated {new Date().getFullYear()}</p>
 
       <div>
-        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>1. What we collect</p>
+        <p style={{fontWeight:700,color:'#2B2420',marginBottom:6}}>1. What we collect</p>
         <p>We collect only what you choose to share in this survey — your responses to questions about your fitness routine, food habits, and diet approach. If you voluntarily provide your name, WhatsApp number, or email address, we collect that too. We do not collect any data beyond what you actively submit.</p>
       </div>
 
       <div>
-        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>2. How we use your data</p>
+        <p style={{fontWeight:700,color:'#2B2420',marginBottom:6}}>2. How we use your data</p>
         <p>Your responses are used purely for internal research to understand how people approach food and fitness goals. This helps us understand real needs before building anything. We do not use your data to run ads, create profiles, or make automated decisions about you.</p>
       </div>
 
       <div>
-        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>3. We will never sell your data</p>
+        <p style={{fontWeight:700,color:'#2B2420',marginBottom:6}}>3. We will never sell your data</p>
         <p>Your information is not shared with, sold to, or transferred to any third party — ever. It stays with the e8n8 team and is used only for the purpose described above.</p>
       </div>
 
       <div>
-        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>4. If you share contact details</p>
+        <p style={{fontWeight:700,color:'#2B2420',marginBottom:6}}>4. If you share contact details</p>
         <p>If you choose to leave your WhatsApp or email, we may reach out to say thank you or share relevant updates if we build something worth sharing. We will not spam you, add you to bulk mailing lists, or contact you about anything unrelated. You can opt out at any time by replying STOP or asking us to delete your details.</p>
       </div>
 
       <div>
-        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>5. Storage</p>
+        <p style={{fontWeight:700,color:'#2B2420',marginBottom:6}}>5. Storage</p>
         <p>Responses are stored securely using Supabase, a trusted cloud database provider. Access is restricted to authorised members of the e8n8 team only.</p>
       </div>
 
       <div>
-        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>6. Your rights</p>
+        <p style={{fontWeight:700,color:'#2B2420',marginBottom:6}}>6. Your rights</p>
         <p>You can request deletion of your data at any time by contacting us. Since the survey is anonymous by default, if you did not leave contact details, there is nothing to delete — your response cannot be linked back to you.</p>
       </div>
 
-      <p style={{color:'#bbb',fontSize:11,marginTop:12}}>Questions? Reach us at hello@e8n8.in</p>
+      <p style={{color:'#B5A78C',fontSize:11,marginTop:12}}>Questions? Reach us at hello@e8n8.in</p>
     </div>
   );
 }
@@ -1281,35 +1279,35 @@ function PrivacyContent(){
 function DisclaimerContent(){
   return(
     <div className="space-y-5">
-      <p style={{...FR,fontSize:16,fontWeight:700,color:'#111'}}>Disclaimer</p>
+      <p style={{...FR,fontSize:16,fontWeight:700,color:'#2B2420'}}>Disclaimer</p>
       <p style={{color:'#666',fontSize:12}}>Last updated {new Date().getFullYear()}</p>
 
       <div>
-        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>1. Purpose of this survey</p>
+        <p style={{fontWeight:700,color:'#2B2420',marginBottom:6}}>1. Purpose of this survey</p>
         <p>This survey is for research and learning purposes only. We are trying to understand how real people approach food, fitness, and diet — before we build anything. Nothing here is a product pitch, sales process, or subscription sign-up.</p>
       </div>
 
       <div>
-        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>2. No commitment on either side</p>
+        <p style={{fontWeight:700,color:'#2B2420',marginBottom:6}}>2. No commitment on either side</p>
         <p>Completing this survey does not commit you to anything, and does not obligate us to contact you or build anything specific. If you express interest in the Bangalore pilot, we will reach out when and if it is ready — there is no guarantee of timeline or inclusion.</p>
       </div>
 
       <div>
-        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>3. Not medical or dietary advice</p>
+        <p style={{fontWeight:700,color:'#2B2420',marginBottom:6}}>3. Not medical or dietary advice</p>
         <p>Nothing in this survey or in any future communications from e8n8 constitutes medical, nutritional, or clinical advice. We are not dieticians, doctors, or licensed health professionals. Please consult a qualified professional before making significant changes to your diet.</p>
       </div>
 
       <div>
-        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>4. Accuracy of information</p>
+        <p style={{fontWeight:700,color:'#2B2420',marginBottom:6}}>4. Accuracy of information</p>
         <p>Calorie counts, nutrition estimates, and any figures mentioned in connection with e8n8 are based on standard reference data and best-effort calculations. They should not be relied upon for medical or therapeutic decision-making.</p>
       </div>
 
       <div>
-        <p style={{fontWeight:700,color:'#111',marginBottom:6}}>5. Early stage</p>
+        <p style={{fontWeight:700,color:'#2B2420',marginBottom:6}}>5. Early stage</p>
         <p>e8n8 is in an early research phase. Any details about a potential product — including pricing, menus, delivery areas, or availability — are illustrative only and subject to change without notice.</p>
       </div>
 
-      <p style={{color:'#bbb',fontSize:11,marginTop:12}}>Questions? Reach us at hello@e8n8.in</p>
+      <p style={{color:'#B5A78C',fontSize:11,marginTop:12}}>Questions? Reach us at hello@e8n8.in</p>
     </div>
   );
 }
@@ -1321,17 +1319,17 @@ function SiteFooter(){
     <>
       {modal==='privacy'&&<Modal title="Privacy Policy" onClose={()=>setModal(null)}><PrivacyContent/></Modal>}
       {modal==='disclaimer'&&<Modal title="Disclaimer" onClose={()=>setModal(null)}><DisclaimerContent/></Modal>}
-      <footer className="border-t-2 border-gray-200 px-5 py-3 bg-white">
+      <footer className="border-t-2 border-[#EADFC4] px-5 py-3 bg-[#FFFDF7]">
         <div className="max-w-xl mx-auto flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 bg-gray-900 flex items-center justify-center">
+            <div className="w-5 h-5 bg-[#FF7A00] flex items-center justify-center">
               <span className="text-white text-[8px] font-bold" style={MN}>e8</span>
             </div>
-            <span className="text-xs text-gray-400" style={MN}>© e8n8. All Rights Reserved.</span>
+            <span className="text-xs text-[#B5A78C]" style={MN}>© e8n8. All Rights Reserved.</span>
           </div>
           <div className="flex gap-4">
-            <button type="button" onClick={()=>setModal('privacy')} className="text-xs text-gray-400 hover:text-gray-700 underline" style={MN}>Privacy Policy</button>
-            <button type="button" onClick={()=>setModal('disclaimer')} className="text-xs text-gray-400 hover:text-gray-700 underline" style={MN}>Disclaimer</button>
+            <button type="button" onClick={()=>setModal('privacy')} className="text-xs text-[#B5A78C] hover:text-[#2B2420] underline" style={MN}>Privacy Policy</button>
+            <button type="button" onClick={()=>setModal('disclaimer')} className="text-xs text-[#B5A78C] hover:text-[#2B2420] underline" style={MN}>Disclaimer</button>
           </div>
         </div>
       </footer>
